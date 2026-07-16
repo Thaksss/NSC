@@ -423,7 +423,7 @@ def send_otp_email(to_email, otp):
         body = f"รหัสยืนยันของคุณคือ: {otp}\nกรุณานำรหัสนี้ไปกรอกในหน้าเว็บไซต์เพื่อตั้งรหัสผ่านใหม่"
         msg.attach(MIMEText(body, 'plain'))
         
-        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=5)
         server.starttls()
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         text = msg.as_string()
@@ -446,8 +446,8 @@ def forgot_password():
             otp = ''.join(random.choices(string.digits, k=6))
             session['reset_email'] = email
             session['reset_otp'] = otp
-            send_otp_email(email, otp)
-            return render_template('forgot-password.html', step='otp')
+            is_sent = send_otp_email(email, otp)
+            return render_template('forgot-password.html', step='otp', dev_otp=otp if not is_sent else None)
         else:
             return render_template('forgot-password.html', error="ไม่พบอีเมลนี้ในระบบ")
             
@@ -546,9 +546,9 @@ def register():
         session['reg_password'] = hashed_password
         session['reg_otp'] = otp
         
-        send_otp_email(email, otp)
+        is_sent = send_otp_email(email, otp)
         
-        return render_template('register.html', step='otp')
+        return render_template('register.html', step='otp', dev_otp=otp if not is_sent else None)
             
     return render_template('register.html')
 
@@ -593,9 +593,10 @@ def resend_register_otp():
         
     otp = ''.join(random.choices(string.digits, k=6))
     session['reg_otp'] = otp
-    send_otp_email(email, otp)
+    is_sent = send_otp_email(email, otp)
     
-    return render_template('register.html', step='otp', error="ระบบได้ส่งรหัส OTP ใหม่ไปยังอีเมลของคุณแล้ว")
+    msg = "ระบบได้ส่งรหัส OTP ใหม่ไปยังอีเมลของคุณแล้ว" if is_sent else "ไม่สามารถส่งอีเมลได้ กรุณาใช้รหัสสำรองด้านล่าง"
+    return render_template('register.html', step='otp', error=msg, dev_otp=otp if not is_sent else None)
 
 @app.route('/logout')
 def logout():
