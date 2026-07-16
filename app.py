@@ -138,54 +138,70 @@ def get_water_quality_records():
         "limit": 5000  
     }
     
+    records = None
     try:
-        response = requests.get(search_url, headers=headers, params=params)
+        # Set a 5-second timeout. If data.go.th blocks the request (e.g. from Render's SG IP), it will fail quickly and use cache.
+        response = requests.get(search_url, headers=headers, params=params, timeout=5)
         res_data = response.json()
-        
         if res_data.get('success'):
             records = res_data['result']['records']
-            records = sorted(records, key=lambda x: x.get('date', ''))
-            
-            formatted_beaches = []
-            for row in records:
-                try:
-                    lat = float(row.get('latitude')) if row.get('latitude') else None
-                    lng = float(row.get('longitude')) if row.get('longitude') else None
-                except ValueError:
-                    lat, lng = None, None
-
-                if lat and lng:
-                    soway_class = row.get('soway_class', 'ไม่ทราบพารามิเตอร์')
-                    
-                    color = "#2ecc71"
-                    if "พอใช้" in soway_class:
-                        color = "#f1c40f"
-                    elif "เสื่อมโทรม" in soway_class:
-                        color = "#e74c3c"
-
-                    beach_info = {
-                        "beach_name": row.get('area_name', 'ไม่ระบุชื่อ'),
-                        "station_code": row.get('station', 'ไม่ระบุสถานี'),
-                        "province": row.get('province', 'ไม่ระบุจังหวัด'),
-                        "lat": lat,
-                        "lng": lng,
-                        "status": soway_class,
-                        "mwqi": row.get('soway_score', '-'),
-                        "color": color,
-                        "do_val": row.get('dissolved_oxygen_mg_l', '-'),
-                        "salinity": row.get('salinity_ppt', '-'),
-                        "tss": row.get('total_suspended_solids_mg_l', '-'),
-                        "ph": row.get('ph', '-'),
-                        "date": row.get('date', ''),
-                        "year": row.get('date', '2021').split('-')[0]
-                    }
-                    formatted_beaches.append(beach_info)
-                    
-            return formatted_beaches
-        return []
     except Exception as e:
-        print(f"เกิดข้อผิดพลาดในการดึงข้อมูล: {e}")
+        print(f"เกิดข้อผิดพลาดในการดึงข้อมูลจาก API: {e}")
+        
+    # Fallback to local cached data if API fails
+    if not records:
+        print("กำลังโหลดข้อมูลจากไฟล์สำรอง (cached_water_data.json)...")
+        cache_path = os.path.join(os.path.dirname(__file__), 'cached_water_data.json')
+        if os.path.exists(cache_path):
+            try:
+                import json
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    records = json.load(f)
+                print(f"โหลดข้อมูลจากไฟล์สำรองสำเร็จ ({len(records)} รายการ)")
+            except Exception as cache_err:
+                print(f"ไม่สามารถโหลดข้อมูลจากไฟล์สำรองได้: {cache_err}")
+                
+    if not records:
         return []
+        
+    records = sorted(records, key=lambda x: x.get('date', ''))
+    
+    formatted_beaches = []
+    for row in records:
+        try:
+            lat = float(row.get('latitude')) if row.get('latitude') else None
+            lng = float(row.get('longitude')) if row.get('longitude') else None
+        except ValueError:
+            lat, lng = None, None
+
+        if lat and lng:
+            soway_class = row.get('soway_class', 'ไม่ทราบพารามิเตอร์')
+            
+            color = "#2ecc71"
+            if "พอใช้" in soway_class:
+                color = "#f1c40f"
+            elif "เสื่อมโทรม" in soway_class:
+                color = "#e74c3c"
+
+            beach_info = {
+                "beach_name": row.get('area_name', 'ไม่ระบุชื่อ'),
+                "station_code": row.get('station', 'ไม่ระบุสถานี'),
+                "province": row.get('province', 'ไม่ระบุจังหวัด'),
+                "lat": lat,
+                "lng": lng,
+                "status": soway_class,
+                "mwqi": row.get('soway_score', '-'),
+                "color": color,
+                "do_val": row.get('dissolved_oxygen_mg_l', '-'),
+                "salinity": row.get('salinity_ppt', '-'),
+                "tss": row.get('total_suspended_solids_mg_l', '-'),
+                "ph": row.get('ph', '-'),
+                "date": row.get('date', ''),
+                "year": row.get('date', '2021').split('-')[0]
+            }
+            formatted_beaches.append(beach_info)
+            
+    return formatted_beaches
 
 @app.route('/')
 def index():
