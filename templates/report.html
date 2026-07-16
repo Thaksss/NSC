@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blue Heart - รายงานมลพิษ</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Kanit', sans-serif;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: linear-gradient(180deg, #62b1cd 0%, #e8f4f8 100%);
+    overflow-x: hidden;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 0 24px;
+    height: 60px;
+    border-bottom: 1px solid #e5e5e0;
+    z-index: 2000;
+}
+
+.logo {
+    font-size: 22px;
+    font-weight: 600;
+    color: #346675;
+    text-decoration: none;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #2c3e50;
+    margin-left: 20px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+h1.title {
+    color: white;
+    font-size: 48px;
+    font-weight: 700;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.report-container {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 40px;
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+.camera-box {
+    width: 100%;
+    height: 350px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+    margin-bottom: 30px;
+}
+
+.camera-box:hover {
+    transform: scale(1.02);
+}
+
+.camera-text {
+    color: white;
+    font-size: 32px;
+    font-weight: 600;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    z-index: 10;
+}
+
+#camera-feed, #captured-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+#captured-image {
+    display: none;
+    z-index: 5;
+}
+
+.btn-submit {
+    background-color: #3f7b8d;
+    color: white;
+    border: none;
+    padding: 12px 40px;
+    border-radius: 25px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    transition: background-color 0.2s;
+}
+
+.btn-submit:hover {
+    background-color: #2c5865;
+}
+
+.btn-submit:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    color: white;
+    font-size: 24px;
+    font-weight: 500;
+}
+</style>
+    <style>
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            z-index: 2000;
+        }
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background-color: #333;
+            transition: all 0.3s;
+        }
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            .nav-links {
+                display: flex !important;
+                position: fixed;
+                top: 0;
+                right: -250px;
+                width: 250px;
+                height: 100vh;
+                background-color: #ffffff;
+                flex-direction: column !important;
+                padding-top: 70px;
+                padding-left: 20px;
+                padding-right: 20px;
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                transition: right 0.3s ease;
+                z-index: 1500;
+                align-items: flex-start !important;
+                gap: 15px !important;
+                overflow-y: auto;
+            }
+            .nav-links.active {
+                right: 0;
+            }
+            .nav-links a {
+                color: #333 !important;
+                text-shadow: none !important;
+                margin-left: 0 !important;
+                width: 100%;
+                text-align: left;
+                padding: 5px 0;
+            }
+            .nav-links .btn-highlight,
+            .nav-links .btn-logout {
+                color: #ffffff !important;
+                text-align: center;
+                width: 100%;
+                padding: 10px 15px;
+                border-radius: 20px;
+            }
+            .nav-links form {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+            .nav-links form button {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 5px;
+            }
+            .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+            .hamburger.active span:nth-child(2) { opacity: 0; }
+            .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        }
+    </style>
+
+
+
+</head>
+<body>
+<nav class="navbar">
+    <a href="/" class="logo">Blue Heart</a>
+    <div class="nav-links">
+        <a href="/home">หน้าแรก</a>
+        <a href="/game">ภารกิจ</a>
+            {% if session.get('role') == 'admin' %}
+                <a href="/admin/reports" class="btn-highlight" style="background-color: #f39c12; margin-right: 10px;">ระบบจัดการ (Admin)</a>
+            {% endif %}
+        {% if session.get('username') %}
+            <a href="/logout">ออกจากระบบ</a>
+        {% else %}
+            <a href="/login">เข้าสู่ระบบ</a>
+        {% endif %}
+    </div>
+</nav>
+
+<div class="main-content">
+    <h1 class="title">รายงานมลพิษ</h1>
+    
+    <div class="report-container">
+        <div class="camera-box" id="camera-box" onclick="handleCameraClick()">
+            <span class="camera-text" id="camera-text">แตะที่ภาพเพื่อถ่ายภาพ</span>
+            <video id="camera-feed" autoplay playsinline style="display: none;"></video>
+            <img id="captured-image" alt="Captured">
+        </div>
+        
+        <button class="btn-submit" id="submit-btn" onclick="submitReport()" disabled>ส่ง</button>
+    </div>
+</div>
+
+<canvas id="canvas" style="display: none;"></canvas>
+
+<div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-message">กำลังตรวจสอบ...</div>
+</div>
+
+<script>
+const cameraBox = document.getElementById('camera-box');
+const cameraText = document.getElementById('camera-text');
+const video = document.getElementById('camera-feed');
+const img = document.getElementById('captured-image');
+const canvas = document.getElementById('canvas');
+const submitBtn = document.getElementById('submit-btn');
+const loadingOverlay = document.getElementById('loading-overlay');
+const loadingMessage = document.getElementById('loading-message');
+
+let stream = null;
+let isCaptured = false;
+let currentLat = null;
+let currentLng = null;
+
+const isLoggedIn = {{ 'true' if session.get('username') else 'false' }};
+
+window.onload = () => {
+    if (!isLoggedIn) {
+        alert('กรุณาเข้าสู่ระบบก่อนรายงานมลพิษ');
+        window.location.href = '/login';
+        return;
+    }
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                currentLat = position.coords.latitude;
+                currentLng = position.coords.longitude;
+                startCamera();
+            },
+            (error) => {
+                alert('ต้องอนุญาตให้เข้าถึงตำแหน่งที่ตั้ง (GPS) เพื่อป้องกันการทุจริต');
+                submitBtn.disabled = true;
+            },
+            { enableHighAccuracy: true }
+        );
+    } else {
+        alert('อุปกรณ์ของคุณไม่รองรับ GPS');
+    }
+};
+
+async function startCamera() {
+    try {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment' }, 
+            audio: false 
+        });
+
+        video.srcObject = stream;
+        video.style.display = 'block';
+        cameraText.style.display = 'none';
+        img.style.display = 'none';
+        isCaptured = false;
+        submitBtn.disabled = true;
+    } catch (err) {
+        console.error("Error accessing camera: ", err);
+        alert('ไม่สามารถเข้าถึงกล้องได้ กรุณาตรวจสอบการอนุญาต');
+    }
+}
+
+function handleCameraClick() {
+    if (!currentLat) {
+        alert('กรุณาเปิด GPS และอนุญาตการเข้าถึงตำแหน่งก่อน');
+        return;
+    }
+
+    if (!isCaptured) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+
+        img.src = canvas.toDataURL('image/jpeg', 0.8);
+        img.style.display = 'block';
+        video.style.display = 'none';
+
+        isCaptured = true;
+        submitBtn.disabled = false;
+        
+        cameraText.innerText = 'แตะภาพเพื่อถ่ายใหม่';
+        cameraText.style.display = 'block';
+        cameraText.style.fontSize = '24px';
+        cameraText.style.background = 'rgba(0,0,0,0.5)';
+        cameraText.style.padding = '10px 20px';
+        cameraText.style.borderRadius = '10px';
+    } else {
+        cameraText.innerText = 'แตะที่ภาพเพื่อถ่ายภาพ';
+        cameraText.style.background = 'none';
+        cameraText.style.fontSize = '32px';
+        startCamera();
+    }
+}
+
+async function submitReport() {
+    if (!isCaptured || !currentLat) return;
+
+    const imageData = img.src;
+
+    loadingMessage.innerText = 'กำลังให้ AI ตรวจสอบ...';
+    loadingOverlay.style.display = 'flex';
+
+    try {
+        const res = await fetch(imageData);
+        const blob = await res.blob();
+        const formData = new FormData();
+        formData.append('image', blob, 'capture.jpg');
+
+        const aiResponse = await fetch('/api/detect-trash', {
+            method: 'POST',
+            body: formData
+        });
+
+        const aiResult = await aiResponse.json();
+
+        if (!aiResponse.ok || !aiResult.success) {
+            throw new Error('AI Error');
+        }
+
+        const trashCount = aiResult.total_pieces;
+
+        if (trashCount >= 1) {
+            loadingMessage.innerText = 'ตรวจพบขยะ ส่งข้อมูลไปหลังบ้าน...';
+
+            const backendPayload = {
+                image: imageData,
+                lat: currentLat,
+                lng: currentLng,
+                trash_count: trashCount
+            };
+
+            const backendResponse = await fetch('/submit_pollution_report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(backendPayload)
+            });
+
+            const backendResult = await backendResponse.json();
+
+            if (backendResult.success) {
+                alert('ส่งรายงานสำเร็จ! อยู่ในขั้นตอนหลังบ้านตรวจ (ตรวจพบขยะ)');
+                window.location.href = '/home';
+            } else {
+                alert('เกิดข้อผิดพลาด: ' + backendResult.message);
+                loadingOverlay.style.display = 'none';
+            }
+        } else {
+            loadingOverlay.style.display = 'none';
+            alert('ไม่พบขยะ กรุณาถ่ายภาพใหม่ที่เห็นขยะชัดเจน');
+            handleCameraClick();
+        }
+
+    } catch (err) {
+        console.error(err);
+        loadingOverlay.style.display = 'none';
+        alert('เกิดข้อผิดพลาดในการตรวจสอบ กรุณาลองใหม่อีกครั้ง');
+    }
+}
+</script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!document.querySelector('.hamburger')) {
+                const nav = document.querySelector('.navbar');
+                const navLinks = document.querySelector('.nav-links');
+                if (nav && navLinks) {
+                    const hamburger = document.createElement('div');
+                    hamburger.className = 'hamburger';
+                    hamburger.innerHTML = '<span></span><span></span><span></span>';
+                    nav.insertBefore(hamburger, navLinks);
+                    
+                    hamburger.addEventListener('click', function() {
+                        hamburger.classList.toggle('active');
+                        navLinks.classList.toggle('active');
+                    });
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

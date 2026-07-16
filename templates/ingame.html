@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Heart - Ingame</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        body, html {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(180deg, #6cb2cc 0%, #e2f1f5 100%);
+            overflow: hidden;
+        }
+
+        .navbar {
+            background-color: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+        }
+
+        .navbar .logo {
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .navbar .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .navbar .nav-links a {
+            color: rgba(255, 255, 255, 0.85);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: color 0.2s ease;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .navbar .nav-links a:hover {
+            color: #ffffff;
+        }
+
+        .navbar .nav-links .btn-highlight {
+            background-color: rgba(0, 119, 204, 0.8);
+            border: 1px solid rgba(0, 119, 204, 0.9);
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: #ffffff;
+            text-shadow: none;
+            transition: all 0.2s ease;
+        }
+
+        .navbar .nav-links .btn-logout {
+            background-color: rgba(226, 109, 92, 0.8);
+            border: 1px solid rgba(226, 109, 92, 0.5);
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-shadow: none;
+            transition: all 0.2s ease;
+        }
+
+        .ingame-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: calc(100vh - 70px);
+            width: 100%;
+            padding: 20px;
+        }
+
+        .ingame-title {
+            font-size: 4rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 50px;
+            letter-spacing: 2px;
+        }
+
+        .ingame-content {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 60px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-card {
+            background-color: #4a8b94;
+            border-radius: 40px;
+            padding: 10px 40px 10px 10px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .user-icon {
+            width: 70px;
+            height: 70px;
+            background-color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ccc;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-name {
+            background-color: white;
+            color: black;
+            padding: 8px 25px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .user-rank-score {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .user-rank {
+            font-weight: 500;
+            font-size: 1.2rem;
+            color: #43f25c;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .user-score {
+            font-weight: 400;
+            font-size: 0.95rem;
+            color: #fff;
+        }
+
+        .left-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            align-items: center;
+        }
+
+        .btn-profile {
+            background-color: #4a8b94;
+            color: white;
+            text-decoration: none;
+            padding: 10px 30px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: 500;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+            width: 200px;
+        }
+
+        .btn-profile:hover {
+            background-color: #3b7077;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .btn-action {
+            background-color: #84b3ba;
+            color: white;
+            text-decoration: none;
+            padding: 20px 40px;
+            border-radius: 20px;
+            font-size: 1.6rem;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+            width: 350px;
+        }
+
+        .btn-action:hover {
+            background-color: #6a959c;
+        }
+        @media (max-width: 768px) {
+            .ingame-title {
+                font-size: 2rem;
+            }
+            .ingame-content {
+                flex-direction: column;
+                align-items: center;
+                gap: 30px;
+                padding: 0 20px;
+            }
+            .user-card {
+                padding: 10px 20px;
+                flex-direction: column;
+                text-align: center;
+                border-radius: 20px;
+            }
+            .user-info {
+                flex-direction: column;
+                gap: 5px;
+            }
+            .user-rank-score {
+                align-items: center;
+            }
+            .btn-action, .btn-profile {
+                width: 100%;
+                max-width: 350px;
+                font-size: 1.2rem;
+                padding: 15px 20px;
+            }
+            .left-panel {
+                width: 100%;
+            }
+        }
+    </style>
+    <style>
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            z-index: 2000;
+        }
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background-color: #333;
+            transition: all 0.3s;
+        }
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            .nav-links {
+                display: flex !important;
+                position: fixed;
+                top: 0;
+                right: -250px;
+                width: 250px;
+                height: 100vh;
+                background-color: #ffffff;
+                flex-direction: column !important;
+                padding-top: 70px;
+                padding-left: 20px;
+                padding-right: 20px;
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                transition: right 0.3s ease;
+                z-index: 1500;
+                align-items: flex-start !important;
+                gap: 15px !important;
+                overflow-y: auto;
+            }
+            .nav-links.active {
+                right: 0;
+            }
+            .nav-links a {
+                color: #333 !important;
+                text-shadow: none !important;
+                margin-left: 0 !important;
+                width: 100%;
+                text-align: left;
+                padding: 5px 0;
+            }
+            .nav-links .btn-highlight,
+            .nav-links .btn-logout {
+                color: #ffffff !important;
+                text-align: center;
+                width: 100%;
+                padding: 10px 15px;
+                border-radius: 20px;
+            }
+            .nav-links form {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+            .nav-links form button {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 5px;
+            }
+            .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+            .hamburger.active span:nth-child(2) { opacity: 0; }
+            .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        }
+    </style>
+
+
+
+</head>
+
+<body>
+    <nav class="navbar">
+        <a href="/" class="logo">Blue Heart</a>
+        <div class="nav-links">
+            <a href="/home">หน้าแรก</a>
+            <a href="/pdata">ข้อมูลย้อนหลัง</a>
+            {% if session.get('username') %}
+            <a href="/pin">ปักหมุดสถานที่</a>
+            {% endif %}
+
+            <a href="/game" class="btn-highlight">ภารกิจพิทักษ์รักษาทะเล</a>
+            {% if session.get('role') == 'admin' %}
+                <a href="/admin/reports" class="btn-highlight" style="background-color: #f39c12; margin-right: 10px;">ระบบจัดการ (Admin)</a>
+            {% endif %}
+
+            {% if session.get('username') %}
+            <a href="/logout" class="btn-logout">ออกจากระบบ ({{ session['username'] }})</a>
+            {% else %}
+            <a href="/login" class="btn-highlight">เข้าสู่ระบบ</a>
+            {% endif %}
+
+            {% if session.get('username') %}
+            <form action="/delete_account" method="POST"
+                onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีผู้ใช้นี้? การกระทำนี้ไม่สามารถย้อนกลับได้');"
+                style="display:inline;">
+                <button type="submit"
+                    style="background-color: #ff4d4d; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 500;">
+                    ลบบัญชีของฉัน
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="ingame-container">
+        <h1 class="ingame-title">ภารกิจพิชิตนักรักษาทะเล</h1>
+        <div class="ingame-content">
+            <div class="left-panel">
+                <div class="user-card">
+                    <div class="user-icon">
+                        <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">{{ username }}</div>
+                        <div class="user-rank-score">
+                            <span class="user-rank">{{ rank }}</span>
+                            <span class="user-score">คะแนน: {{ score }} แต้ม</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="left-buttons" style="margin-top: 20px;">
+                    <a href="/report" class="btn-action">รายงานมลพิษ</a>
+                    <a href="/clear" class="btn-action">เคลียร์มลพิษ</a>
+                    <a href="/confirm" class="btn-action">ยืนยันมลพิษ</a>
+                    <a href="/history" class="btn-profile" style="margin-top: 20px;">ประวัติภารกิจ</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!document.querySelector('.hamburger')) {
+                const nav = document.querySelector('.navbar');
+                const navLinks = document.querySelector('.nav-links');
+                if (nav && navLinks) {
+                    const hamburger = document.createElement('div');
+                    hamburger.className = 'hamburger';
+                    hamburger.innerHTML = '<span></span><span></span><span></span>';
+                    nav.insertBefore(hamburger, navLinks);
+                    
+                    hamburger.addEventListener('click', function() {
+                        hamburger.classList.toggle('active');
+                        navLinks.classList.toggle('active');
+                    });
+                }
+            }
+        });
+    </script>
+
+</body>
+
+</html>

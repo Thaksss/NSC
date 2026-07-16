@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Heart - แผนที่คุณภาพน้ำทะเลชายหาด</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #f7f6f3;
+        }
+
+        .main-wrapper {
+            position: relative;
+            flex: 1;
+            height: calc(100vh - 60px);
+            width: 100%;
+            display: flex;
+        }
+
+        #map-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-search-wrapper {
+            position: absolute;
+            top: 16px;
+            left: 432px;
+            z-index: 1500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            transition: left 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+            pointer-events: auto;
+        }
+
+        .map-search-wrapper.shifted {
+            left: 848px;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background-color: #ffffff;
+            padding: 0 16px;
+            height: 38px;
+            width: 240px;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #cbd5e1;
+        }
+
+        .search-icon {
+            font-size: 13px;
+            margin-right: 8px;
+            color: #64748b;
+        }
+
+        .search-box input {
+            border: none;
+            outline: none;
+            width: 100%;
+            font-size: 13px;
+            color: #1a1a1a;
+            background: transparent;
+        }
+
+        .capsule-filter {
+            position: relative;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 20px;
+            height: 38px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+        }
+
+        .capsule-filter select {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .capsule-label {
+            font-size: 13px;
+            color: #334155;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .sidebar {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            bottom: 16px;
+            width: 400px;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 24px 20px 16px 20px;
+            border-bottom: 1px solid #f1f1ee;
+        }
+
+        .sidebar-header h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .sidebar-header .subtitle {
+            font-size: 13px;
+            color: #767670;
+            margin-top: 4px;
+        }
+
+        .card-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            background-color: #ffffff;
+        }
+
+        .route-card {
+            display: flex;
+            gap: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-radius: 16px;
+            background: #ffffff;
+            border: 1px solid #e5e5e0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .route-card:hover {
+            border-color: #346675;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+            transform: translateY(-1px);
+        }
+
+        .card-img {
+            width: 80px;
+            height: 80px;
+            background-color: #f0f0ed;
+            border-radius: 12px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed #cfd8dc;
+        }
+
+        .card-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex: 1;
+        }
+
+        .badge {
+            align-self: flex-start;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 20px;
+        }
+
+        .beach-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #1a252f;
+        }
+
+        .card-meta {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .detail-sidebar-left {
+            position: absolute;
+            top: 16px;
+            left: -420px;
+            bottom: 16px;
+            width: 400px;
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 4px 4px 24px rgba(0, 0, 0, 0.15);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: left 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .detail-sidebar-left.open {
+            left: 432px;
+        }
+
+        .detail-header-cover {
+            position: relative;
+            height: 140px;
+            background-color: #eaeff2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #90a4ae;
+            font-size: 40px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .btn-close-detail {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .detail-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .detail-title-section h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .rating-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 6px;
+            font-size: 13px;
+        }
+
+        .stars {
+            color: #f59e0b;
+            font-size: 15px;
+        }
+
+        .btn-like {
+            background: #f1f5f9;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-like.liked {
+            background-color: #fee2e2;
+            color: #ef4444;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .metric-card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 2px;
+        }
+
+        .metric-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #346675;
+        }
+
+        .contact-box {
+            background-color: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 15px;
+        }
+
+        .contact-box h4 {
+            font-size: 13px;
+            color: #1d4ed8;
+            margin-bottom: 6px;
+        }
+
+        .review-box {
+            margin-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 15px;
+        }
+
+        .review-box h4 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #1e293b;
+        }
+
+        .star-rating-form {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            font-size: 22px;
+            color: #cbd5e1;
+        }
+
+        .star-rating-form span.active {
+            color: #f59e0b;
+        }
+
+        .review-textarea {
+            width: 100%;
+            height: 70px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            padding: 8px;
+            font-size: 13px;
+            resize: none;
+            outline: none;
+            margin-bottom: 8px;
+        }
+
+        .upload-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .file-label {
+            font-size: 12px;
+            color: #346675;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .img-preview {
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            object-fit: cover;
+            display: none;
+            border: 1px solid #cbd5e1;
+        }
+
+        .btn-submit-review {
+            width: 100%;
+            background-color: #346675;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .comments-list {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .comment-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .comment-user {
+            font-weight: 600;
+            font-size: 12px;
+            color: #334155;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .comment-text {
+            font-size: 12px;
+            color: #475569;
+            margin-top: 4px;
+        }
+
+        .comment-img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .comment-img:hover {
+            transform: scale(1.02);
+        }
+
+        .card-list::-webkit-scrollbar,
+        .detail-body::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .card-list::-webkit-scrollbar-thumb,
+        .detail-body::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .leaflet-selected-aura {
+            background: rgba(52, 102, 117, 0.2);
+            border: 2px dashed #346675;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(52, 102, 117, 0.4);
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #ffffff;
+            padding: 0 24px;
+            height: 60px;
+            border-bottom: 1px solid #e5e5e0;
+            z-index: 2000;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: #346675;
+            text-decoration: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #2c3e50;
+            margin-left: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-links .btn-highlight {
+            background-color: #346675;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+
+        .nav-links .btn-highlight:hover {
+            background-color: #254a55;
+        }
+
+        .nav-links .btn-logout {
+            background-color: #e26d5c;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: background-color 0.2s ease;
+        }
+
+        .nav-links .btn-logout:hover {
+            background-color: #c94f3e;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                top: auto !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 35vh !important;
+                border-radius: 24px 24px 0 0 !important;
+                z-index: 1000 !important;
+                padding-bottom: 20px !important;
+                position: fixed !important;
+            }
+            
+            .detail-sidebar-left {
+                top: auto !important;
+                bottom: -100% !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 85vh !important;
+                border-radius: 24px 24px 0 0 !important;
+                transition: bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+                z-index: 1500 !important;
+                position: fixed !important;
+            }
+            
+            .detail-sidebar-left.open {
+                bottom: 0 !important;
+            }
+            
+            .map-search-wrapper {
+                top: 15px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                width: 95% !important;
+                flex-wrap: wrap !important;
+                gap: 5px !important;
+                justify-content: space-between !important;
+                z-index: 900 !important;
+            }
+            
+            .map-search-wrapper.shifted {
+                left: 50% !important;
+            }
+            
+            .search-box {
+                width: 100% !important;
+                height: 40px !important;
+            }
+
+            .capsule-filter {
+                width: 32% !important;
+                height: 32px !important;
+                padding: 0 4px !important;
+                justify-content: center !important;
+            }
+
+            .capsule-label {
+                font-size: 11px !important;
+                gap: 2px !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+    <style>
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            z-index: 2000;
+        }
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background-color: #333;
+            transition: all 0.3s;
+        }
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            .nav-links {
+                display: flex !important;
+                position: fixed;
+                top: 0;
+                right: -250px;
+                width: 250px;
+                height: 100vh;
+                background-color: #ffffff;
+                flex-direction: column !important;
+                padding-top: 70px;
+                padding-left: 20px;
+                padding-right: 20px;
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                transition: right 0.3s ease;
+                z-index: 1500;
+                align-items: flex-start !important;
+                gap: 15px !important;
+                overflow-y: auto;
+            }
+            .nav-links.active {
+                right: 0;
+            }
+            .nav-links a {
+                color: #333 !important;
+                text-shadow: none !important;
+                margin-left: 0 !important;
+                width: 100%;
+                text-align: left;
+                padding: 5px 0;
+            }
+            .nav-links .btn-highlight,
+            .nav-links .btn-logout {
+                color: #ffffff !important;
+                text-align: center;
+                width: 100%;
+                padding: 10px 15px;
+                border-radius: 20px;
+            }
+            .nav-links form {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+            .nav-links form button {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 5px;
+            }
+            .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+            .hamburger.active span:nth-child(2) { opacity: 0; }
+            .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        }
+    </style>
+
+
+
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/" class="logo">Blue Heart</a>
+        <div class="nav-links">
+            <a href="/home">หน้าแรก</a>
+            <a href="/pdata" class="active">ข้อมูลย้อนหลัง</a>
+            {% if session.get('username') %}
+                <a href="/pin">ปักหมุดสถานที่</a>
+            {% endif %}
+            
+            <a href="/game" class="btn-highlight">ภารกิจพิทักษ์รักษาทะเล</a>
+            
+            {% if session.get('role') == 'admin' %}
+                <a href="/admin/reports" class="btn-highlight" style="background-color: #f39c12; margin-right: 10px;">ระบบจัดการ (Admin)</a>
+            {% endif %}
+            {% if session.get('username') %}
+                <a href="/logout" class="btn-logout">ออกจากระบบ ({{ session['username'] }})</a>
+            {% else %}
+                <a href="/login" class="btn-highlight">เข้าสู่ระบบ</a>
+            {% endif %}
+
+            {% if session.get('username') %}
+                <form action="/delete_account" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีผู้ใช้นี้? การกระทำนี้ไม่สามารถย้อนกลับได้');" style="display:inline;">
+                    <button type="submit" style="background-color: #ff4d4d; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 500; margin-left: 20px;">
+                        ลบบัญชีของฉัน
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="main-wrapper">
+
+        <div class="map-search-wrapper" id="searchWrapper">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="beachSearch" placeholder="ค้นหาชื่อชายหาด..." onkeyup="filterBeaches(false)">
+            </div>
+
+            <div class="capsule-filter">
+                <div class="capsule-label">
+                    📍 จังหวัด: <span id="provinceLabelText">ทั้งหมด</span>
+                </div>
+                <select id="provinceSelect" onchange="filterBeaches(true)">
+                    <option value="">ทั้งหมด</option>
+                    {% for province in provinces %}
+                    <option value="{{ province }}">{{ province }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="capsule-filter">
+                <div class="capsule-label">
+                    🏖️ หาด/สถานี: <span id="placeLabelText">ทั้งหมด</span>
+                </div>
+                <select id="placeSelect" onchange="handleDropdownPlaceSelect(this)">
+                    <option value="">ทั้งหมด</option>
+                    {% for beach in beaches %}
+                    <option value="{{ beach.beach_name }}">{{ beach.beach_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="capsule-filter">
+                <div class="capsule-label">
+                    👶 ช่วงอายุที่เหมาะ: <span id="ageLabelText">ทั้งหมด</span>
+                </div>
+                <select id="ageSelect" onchange="filterBeaches(false)">
+                    <option value="">ทั้งหมด</option>
+                    <option value="children">เด็กเล็ก (น้ำดีมาก/ปลอดภัยสูง)</option>
+                    <option value="adults">วัยรุ่น/ผู้ใหญ่ (กิจกรรมทางน้ำ)</option>
+                    <option value="elders">ผู้สูงอายุ (พักผ่อน/อากาศบริสุทธิ์)</option>
+                </select>
+            </div>
+        </div>
+
+        <main id="map-container">
+            <div id="map"></div>
+        </main>
+
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>ชายหาดทั่วประเทศ</h2>
+                <p class="subtitle">แสดงคุณภาพน้ำทะเลปีล่าสุดของแต่ละสถานี</p>
+            </div>
+
+            <div class="card-list" id="beachListContainer">
+                {% for beach in beaches %}
+                <div class="route-card" id="card-{{ beach.beach_name | replace(' ', '_') }}"
+                    data-beach="{{ beach.beach_name }}" data-province="{{ beach.province }}"
+                    data-status="{{ beach.status }}" data-score="{{ beach.mwqi }}" data-lat="{{ beach.lat }}"
+                    data-lng="{{ beach.lng }}" data-color="{{ beach.color }}" data-year="{{ beach.year }}"
+                    data-do="{{ beach.do_val }}" data-tss="{{ beach.tss }}" data-ph="{{ beach.ph }}"
+                    onclick="handleCardClick(this)">
+                    <div class="card-img"
+                        style="background-color: #eaeff2; display: flex; align-items: center; justify-content: center; border: 1px dashed #cfd8dc;">
+                        <span style="font-size: 20px; color: #90a4ae;">🌊</span>
+                    </div>
+                    <div class="card-info">
+                        <span class="badge"
+                            style="background-color: {{ beach.color }}22; color: {{ beach.color }}; border: 1px solid {{ beach.color }}44;">
+                            {{ beach.status }} ({{ beach.mwqi }} คะแนน)
+                        </span>
+                        <h3 class="beach-title">{{ beach.beach_name }}</h3>
+                        <p class="card-meta">จังหวัด: {{ beach.province }} • ปี ค.ศ. {{ beach.year }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </aside>
+
+        <aside class="detail-sidebar-left" id="detailPanel">
+            <div class="detail-header-cover">
+                <span>🏖️</span>
+                <button class="btn-close-detail" onclick="closeDetailPanel()">×</button>
+            </div>
+
+            <div class="detail-body">
+                <div class="detail-title-section">
+                    <h3 id="panelBeachName">ชื่อชายหาด</h3>
+                    <div class="rating-row">
+                        <span class="stars" id="panelStarsText">★★★★★</span>
+                        <span id="panelRatingText">0.0 (0 รีวิว)</span>
+                        <button class="btn-like" id="btnLike" onclick="toggleLike()">
+                            ❤️ ถูกใจ (<span id="likeCount">0</span>)
+                        </button>
+                    </div>
+                </div>
+
+                <div id="panelBadge" class="badge" style="margin-top: 10px; display: inline-block;">สถานะ</div>
+                <p class="card-meta" id="panelMeta" style="margin-top: 4px;">จังหวัด: -</p>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">MWQI Score</div>
+                        <div class="metric-value" id="valMwqi">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">DO (mg/L)</div>
+                        <div class="metric-value" id="valDo">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">TSS (mg/L)</div>
+                        <div class="metric-value" id="valTss">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">ค่า pH</div>
+                        <div class="metric-value" id="valPh">-</div>
+                    </div>
+                </div>
+
+                <div class="contact-box">
+                    <h4>📞 หน่วยงานฉุกเฉินและร้องเรียนในพื้นที่</h4>
+                    <div id="contactOrg" style="font-size: 12px; font-weight: 500;">-</div>
+                    <div id="contactPhone" style="font-size: 12px; color: #475569;">โทร: -</div>
+                    <div id="contactEmail" style="font-size: 12px; color: #475569;">อีเมล: -</div>
+                </div>
+
+                <div class="review-box">
+                    <h4>💬 ให้คะแนนและรีวิวสถานที่</h4>
+                    <div class="star-rating-form" id="starForm">
+                        <span onclick="setRatingForm(1)">★</span>
+                        <span onclick="setRatingForm(2)">★</span>
+                        <span onclick="setRatingForm(3)">★</span>
+                        <span onclick="setRatingForm(4)">★</span>
+                        <span onclick="setRatingForm(5)">★</span>
+                    </div>
+
+                    <textarea class="review-textarea" id="reviewComment"
+                        placeholder="พิมพ์แบ่งปันประสบการณ์ของคุณที่นี่..."></textarea>
+
+                    <div class="upload-row">
+                        <label class="file-label" for="fileInput">📷 อัปโหลดรูปภาพ</label>
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;"
+                            onchange="previewImage(event)">
+                        <img id="previewImg" class="img-preview" />
+                    </div>
+
+                    <button class="btn-submit-review" onclick="submitReview()">บันทึกการรีวิว</button>
+
+                    <div class="comments-list" id="commentsContainer"></div>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map', { zoomControl: false }).setView([13.7367, 100.5231], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        var bounds = [];
+        var markers = [];
+        var auraCircle = null;
+        var beachesData = {{ beaches | tojson | safe }};
+        var currentSelectedBeachName = "";
+        var selectedStars = 5;
+        var uploadedImageBase64 = "";
+
+        var currentUser = {
+            isLoggedIn: {% if session.get('username') %}true{% else %} false{% endif %},
+        username: "{% if session.get('username') %}{{ session['username'] }}{% else %}ผู้ใช้งานทั่วไป{% endif %}"
+        };
+
+        var provinceContacts = {
+            "ระยอง": { org: "ทสจ.ระยอง (ศาลากลางจังหวัด)", phone: "038-694-007", email: "rayong.org@mnre.go.th" },
+            "ชลบุรี": { org: "ทสจ.ชลบุรี (ฝ่ายสิ่งแวดล้อม)", phone: "038-276-173", email: "chonburi.org@mnre.go.th" },
+            "ภูเก็ต": { org: "ทสจ.ภูเก็ต (ควบคุมมลพิษทะเล)", phone: "076-211-496", email: "phuket.org@mnre.go.th" }
+        };
+
+        beachesData.forEach(function (beach) {
+            if (beach.lat && beach.lng) {
+                var circleMarker = L.circleMarker([beach.lat, beach.lng], {
+                    radius: 9, fillColor: beach.color, color: "#ffffff", weight: 1.5, opacity: 1, fillOpacity: 0.85
+                }).addTo(map);
+
+                circleMarker.on('click', function () {
+                    openDetailPanel(beach);
+                });
+
+                markers.push({
+                    marker: circleMarker, beach_name: beach.beach_name, province: beach.province,
+                    status: beach.status, score: parseFloat(beach.mwqi) || 0, lat: beach.lat, lng: beach.lng, rawData: beach
+                });
+                bounds.push([beach.lat, beach.lng]);
+            }
+        });
+
+        if (bounds.length > 0) { map.fitBounds(bounds, { padding: [50, 50] }); }
+
+        function handleCardClick(cardElement) {
+            var beachObj = {
+                beach_name: cardElement.getAttribute('data-beach'),
+                province: cardElement.getAttribute('data-province'),
+                status: cardElement.getAttribute('data-status'),
+                mwqi: cardElement.getAttribute('data-score'),
+                lat: cardElement.getAttribute('data-lat'),
+                lng: cardElement.getAttribute('data-lng'),
+                color: cardElement.getAttribute('data-color'),
+                year: cardElement.getAttribute('data-year'),
+                do_val: cardElement.getAttribute('data-do'),
+                tss: cardElement.getAttribute('data-tss'),
+                ph: cardElement.getAttribute('data-ph')
+            };
+            openDetailPanel(beachObj);
+        }
+
+        function handleDropdownPlaceSelect(dropdown) {
+            var selectedName = dropdown.value;
+            filterBeaches(false);
+            if (selectedName) {
+                var match = beachesData.find(b => b.beach_name === selectedName);
+                if (match) openDetailPanel(match);
+            }
+        }
+
+        function updatePlaceDropdown(selectedProvince) {
+            var placeSelect = document.getElementById('placeSelect');
+            placeSelect.innerHTML = '<option value="">ทั้งหมด</option>';
+            var filtered = selectedProvince ? beachesData.filter(b => b.province === selectedProvince) : beachesData;
+            var uniqueBeaches = [...new Set(filtered.map(b => b.beach_name))].sort();
+            uniqueBeaches.forEach(function (name) {
+                var opt = document.createElement('option');
+                opt.value = name; opt.innerHTML = name;
+                placeSelect.appendChild(opt);
+            });
+        }
+
+        function filterBeaches(isProvinceChanged = false) {
+            var searchInput = document.getElementById('beachSearch').value.toLowerCase();
+            var selectedProvince = document.getElementById('provinceSelect').value;
+
+            if (isProvinceChanged) {
+                updatePlaceDropdown(selectedProvince);
+            }
+
+            var selectedPlace = document.getElementById('placeSelect').value;
+            var selectedAge = document.getElementById('ageSelect').value;
+
+            document.getElementById('provinceLabelText').innerText = selectedProvince || "ทั้งหมด";
+            document.getElementById('placeLabelText').innerText = selectedPlace || "ทั้งหมด";
+
+            var ageText = "ทั้งหมด";
+            if (selectedAge === 'children') ageText = "เด็กเล็ก";
+            if (selectedAge === 'adults') ageText = "วัยรุ่น/ผู้ใหญ่";
+            if (selectedAge === 'elders') ageText = "ผู้สูงอายุ";
+            document.getElementById('ageLabelText').innerText = ageText;
+
+            var cards = document.getElementsByClassName('route-card');
+            for (var i = 0; i < cards.length; i++) {
+                var card = cards[i];
+                var bName = card.getAttribute('data-beach');
+                var bProvince = card.getAttribute('data-province');
+                var bStatus = card.getAttribute('data-status');
+                var bScore = parseFloat(card.getAttribute('data-score')) || 0;
+
+                var matchesSearch = bName.toLowerCase().indexOf(searchInput) > -1;
+                var matchesProvince = selectedProvince === "" || bProvince === selectedProvince;
+                var matchesPlace = selectedPlace === "" || bName === selectedPlace;
+
+                var matchesAge = true;
+                if (selectedAge === 'children') {
+                    matchesAge = bScore >= 75;
+                } else if (selectedAge === 'elders') {
+                    matchesAge = !bStatus.includes("เสื่อมโทรม");
+                } else if (selectedAge === 'adults') {
+                    matchesAge = true;
+                }
+
+                card.style.display = (matchesSearch && matchesProvince && matchesPlace && matchesAge) ? "" : "none";
+            }
+
+            markers.forEach(function (item) {
+                var matchesSearch = item.beach_name.toLowerCase().indexOf(searchInput) > -1;
+                var matchesProvince = selectedProvince === "" || item.province === selectedProvince;
+                var matchesPlace = selectedPlace === "" || item.beach_name === selectedPlace;
+
+                var matchesAge = true;
+                if (selectedAge === 'children') {
+                    matchesAge = item.score >= 75;
+                } else if (selectedAge === 'elders') {
+                    matchesAge = !item.status.includes("เสื่อมโทรม");
+                } else if (selectedAge === 'adults') {
+                    matchesAge = true;
+                }
+
+                if (matchesSearch && matchesProvince && matchesPlace && matchesAge) {
+                    item.marker.addTo(map);
+                } else {
+                    map.removeLayer(item.marker);
+                }
+            });
+        }
+
+        function openDetailPanel(beachObj) {
+            currentSelectedBeachName = beachObj.beach_name;
+
+            document.getElementById('detailPanel').classList.add('open');
+            document.getElementById('searchWrapper').classList.add('shifted');
+
+            if (auraCircle) { map.removeLayer(auraCircle); }
+
+            if (beachObj.lat && beachObj.lng) {
+                var bLat = parseFloat(beachObj.lat);
+                var bLng = parseFloat(beachObj.lng);
+
+                map.setView([bLat, bLng], 13, { animate: true, duration: 0.8 });
+
+                auraCircle = L.circleMarker([bLat, bLng], {
+                    radius: 20,
+                    className: 'leaflet-selected-aura',
+                    interactive: false
+                }).addTo(map);
+            }
+
+            document.getElementById('panelBeachName').innerText = beachObj.beach_name;
+            document.getElementById('panelMeta').innerText = `จังหวัด: ${beachObj.province} • ปีล่าสุด ค.ศ. ${beachObj.year}`;
+
+            var badge = document.getElementById('panelBadge');
+            badge.innerText = `${beachObj.status} (${beachObj.mwqi} คะแนน)`;
+            badge.style.backgroundColor = beachObj.color + "22";
+            badge.style.color = beachObj.color;
+            badge.style.border = "1px solid " + beachObj.color + "44";
+
+            document.getElementById('valMwqi').innerText = beachObj.mwqi || "-";
+            document.getElementById('valDo').innerText = beachObj.do_val || "-";
+            document.getElementById('valTss').innerText = beachObj.tss || "-";
+            document.getElementById('valPh').innerText = beachObj.ph || "-";
+
+            var contact = provinceContacts[beachObj.province] || { org: `ทสจ.${beachObj.province}`, phone: "1650", email: "info@mnre.go.th" };
+            document.getElementById('contactOrg').innerText = contact.org;
+            document.getElementById('contactPhone').innerText = `📞 โทร: ${contact.phone}`;
+            document.getElementById('contactEmail').innerText = `✉️ อีเมล: ${contact.email}`;
+
+            var btn = document.getElementById('btnLike');
+            if (currentUser.isLoggedIn) {
+                var storageKey = currentUser.username + "_like_" + currentSelectedBeachName;
+                var isLiked = localStorage.getItem(storageKey) === "true";
+
+                if (isLiked) {
+                    btn.classList.add('liked');
+                } else {
+                    btn.classList.remove('liked');
+                }
+            } else {
+                btn.classList.remove('liked');
+            }
+
+            var globalLikeKey = "global_likes_count_" + currentSelectedBeachName;
+            var currentLikesCount = parseInt(localStorage.getItem(globalLikeKey)) || 0;
+            document.getElementById('likeCount').innerText = currentLikesCount;
+
+            loadBeachReviews(beachObj.beach_name);
+
+            setRatingForm(5);
+            document.getElementById('reviewComment').value = "";
+            document.getElementById('previewImg').style.display = "none";
+            uploadedImageBase64 = "";
+        }
+
+        function toggleLike() {
+            if (!currentUser.isLoggedIn) {
+                alert("⚠️ ขออภัยครับ! คุณต้องเข้าสู่ระบบก่อนจึงจะสามารถกดถูกใจชายหาดได้");
+                window.location.href = "/login";
+                return;
+            }
+
+            if (!currentSelectedBeachName) return;
+
+            var userBeachKey = currentUser.username + "_like_" + currentSelectedBeachName;
+            var globalLikeKey = "global_likes_count_" + currentSelectedBeachName;
+
+            var isLikedByMe = localStorage.getItem(userBeachKey) === "true";
+            var totalLikesCount = parseInt(localStorage.getItem(globalLikeKey)) || 0;
+            var btn = document.getElementById('btnLike');
+
+            if (!isLikedByMe) {
+                localStorage.setItem(userBeachKey, "true");
+                totalLikesCount += 1;
+                btn.classList.add('liked');
+            } else {
+                localStorage.setItem(userBeachKey, "false");
+                totalLikesCount = Math.max(0, totalLikesCount - 1);
+                btn.classList.remove('liked');
+            }
+
+            localStorage.setItem(globalLikeKey, totalLikesCount);
+            document.getElementById('likeCount').innerText = totalLikesCount;
+        }
+
+        function loadBeachReviews(beachName) {
+            var container = document.getElementById('commentsContainer');
+            container.innerHTML = "";
+
+            fetch('/get_reviews/' + encodeURIComponent(beachName))
+                .then(response => response.json())
+                .then(data => {
+                    var reviews = data.reviews;
+
+                    if (reviews.length === 0) {
+                        document.getElementById('panelRatingText').innerText = "0.0 (0 รีวิว)";
+                        document.getElementById('panelStarsText').innerText = "☆☆☆☆☆";
+                        container.innerHTML = '<p style="font-size:12px; color:#94a3b8; text-align:center; padding:10px;">ยังไม่มีรีวิวสำหรับชายหาดนี้ ร่วมแชร์ประสบการณ์เป็นคนแรกได้เลย!</p>';
+                    } else {
+                        var totalStars = 0;
+                        reviews.forEach(function (rev) {
+                            totalStars += rev.stars;
+
+                            var newItem = document.createElement('div');
+                            newItem.className = "comment-item";
+                            newItem.style.borderBottom = "1px solid #e2e8f0";
+                            newItem.style.padding = "10px 0";
+                            newItem.style.marginBottom = "8px";
+
+                            var deleteBtnHtml = "";
+                            if (currentUser.isLoggedIn && currentUser.username === rev.user) {
+                                deleteBtnHtml = `<button onclick="deleteReview(${rev.id})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; margin-left:10px; font-family:'Kanit', sans-serif; font-weight: 500;">❌ ลบรีวิว</button>`;
+                            }
+
+                            newItem.innerHTML = `
+                                <div class="comment-user" style="display:flex; justify-content:space-between; font-size:13px; font-weight:500;">
+                                    <span>👤 ${rev.user} ${deleteBtnHtml}</span>
+                                    <span style="color:#f59e0b;">${"★".repeat(rev.stars)}${"☆".repeat(5 - rev.stars)}</span>
+                                </div>
+                                <div class="comment-text" style="font-size:13px; color:#334155; margin-top:4px; word-break:break-all;">${rev.text}</div>
+                            `;
+
+                            if (rev.img) {
+                                var imgNode = document.createElement('img');
+                                imgNode.className = "comment-img";
+                                imgNode.src = rev.img;
+                                imgNode.style.maxWidth = "120px";
+                                imgNode.style.borderRadius = "4px";
+                                imgNode.style.marginTop = "6px";
+                                imgNode.style.display = "block";
+                                newItem.appendChild(imgNode);
+                            }
+                            container.appendChild(newItem);
+                        });
+
+                        var avg = (totalStars / reviews.length).toFixed(1);
+                        document.getElementById('panelRatingText').innerText = `${avg} (${reviews.length} รีวิว)`;
+                        document.getElementById('panelStarsText').innerText = "★".repeat(Math.round(avg)) + "☆".repeat(5 - Math.round(avg));
+                    }
+                })
+                .catch(err => console.error("Error loading reviews:", err));
+        }
+
+        function setRatingForm(stars) {
+            selectedStars = stars;
+            var spans = document.getElementById('starForm').getElementsByTagName('span');
+            for (var i = 0; i < spans.length; i++) {
+                spans[i].classList.toggle('active', i < stars);
+            }
+        }
+
+        function previewImage(event) {
+            var file = event.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var img = document.getElementById('previewImg');
+                    img.src = e.target.result; img.style.display = "block";
+                    uploadedImageBase64 = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function submitReview() {
+            if (!currentUser.isLoggedIn) {
+                alert("⚠️ ขออภัยครับ! คุณต้องเข้าสู่ระบบก่อนถึงจะสามารถรีวิวสถานที่ได้");
+                window.location.href = "/login";
+                return;
+            }
+
+            var text = document.getElementById('reviewComment').value.trim();
+            if (!text) { alert("กรุณาพิมพ์ข้อความรีวิวก่อนบันทึกครับ"); return; }
+            if (!currentSelectedBeachName) return;
+
+            var reviewPayload = {
+                beach_name: currentSelectedBeachName,
+                stars: selectedStars,
+                text: text,
+                img: uploadedImageBase64
+            };
+
+            fetch('/submit_review', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reviewPayload)
+            })
+                .then(res => {
+                    if (res.status === 401) {
+                        alert("⚠️ เซสชันหมดอายุ หรือคุณยังไม่ได้เข้าสู่ระบบ!");
+                        window.location.href = "/login";
+                        throw new Error("Unauthorized");
+                    }
+                    return res.json();
+                })
+                .then(result => {
+                    if (result.status === "success") {
+                        alert(result.message);
+                        loadBeachReviews(currentSelectedBeachName);
+
+                        document.getElementById('reviewComment').value = "";
+                        document.getElementById('previewImg').style.display = "none";
+                        if (document.getElementById('fileInput')) {
+                            document.getElementById('fileInput').value = "";
+                        }
+                        uploadedImageBase64 = "";
+                        setRatingForm(5);
+                    } else {
+                        alert(result.message);
+                    }
+                })
+                .catch(err => console.error("Error submitting review:", err));
+        }
+
+        function deleteReview(reviewId) {
+            if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรีวิวนี้ออกจากระบบฐานข้อมูล?")) return;
+
+            fetch('/delete_review/' + reviewId, {
+                method: 'POST'
+            })
+                .then(res => res.json())
+                .then(result => {
+                    alert(result.message);
+                    if (result.status === "success") {
+                        loadBeachReviews(currentSelectedBeachName);
+                    }
+                })
+                .catch(err => console.error("Error deleting review:", err));
+        }
+
+        function closeDetailPanel() {
+            document.getElementById('detailPanel').classList.remove('open');
+            document.getElementById('searchWrapper').classList.remove('shifted');
+
+            if (auraCircle) {
+                map.removeLayer(auraCircle);
+                auraCircle = null;
+            }
+        }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!document.querySelector('.hamburger')) {
+                const nav = document.querySelector('.navbar');
+                const navLinks = document.querySelector('.nav-links');
+                if (nav && navLinks) {
+                    const hamburger = document.createElement('div');
+                    hamburger.className = 'hamburger';
+                    hamburger.innerHTML = '<span></span><span></span><span></span>';
+                    nav.insertBefore(hamburger, navLinks);
+                    
+                    hamburger.addEventListener('click', function() {
+                        hamburger.classList.toggle('active');
+                        navLinks.classList.toggle('active');
+                    });
+                }
+            }
+        });
+    </script>
+
+</body>
+
+</html>

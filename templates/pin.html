@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Heart - ปักหมุดสถานที่</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        body {
+            background-color: #FDF9EC;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #ffffff;
+            padding: 0 24px;
+            height: 60px;
+            border-bottom: 1px solid #e5e5e0;
+            z-index: 2000; 
+        }
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: #346675;
+            text-decoration: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #2c3e50;
+            margin-left: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-links .btn-highlight {
+            background-color: #346675;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+
+        .nav-links .btn-highlight:hover {
+            background-color: #254a55;
+        }
+
+        .nav-links .btn-logout {
+            background-color: #e26d5c;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: background-color 0.2s ease;
+        }
+
+        .nav-links .btn-logout:hover {
+            background-color: #c94f3e;
+        }
+
+        .main-container {
+            max-width: 1100px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .form-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 32px;
+            font-weight: 600;
+            color: #3A6367;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .custom-select,
+        .custom-input {
+            background-color: #ffffff;
+            border: 1px solid #7F9F9D;
+            border-radius: 20px;
+            padding: 6px 16px;
+            font-size: 14px;
+            color: #333;
+            outline: none;
+        }
+
+        .custom-select {
+            cursor: pointer;
+            min-width: 140px;
+        }
+
+        .custom-input {
+            width: 160px;
+        }
+
+        .custom-input::placeholder {
+            color: #A0B3B2;
+            text-align: center;
+        }
+
+        .map-wrapper {
+            position: relative;
+            background: #ffffff;
+            border: 3px solid #A6B9BA;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 40px;
+        }
+
+        #map {
+            width: 100%;
+            height: 450px;
+            z-index: 1;
+        }
+
+        .optional-section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #3A6367;
+            margin-bottom: 20px;
+        }
+
+        .parameters-card {
+            background-color: #ffffff;
+            border-radius: 32px;
+            padding: 40px 60px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .param-row {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            width: 100%;
+        }
+
+        .param-label {
+            background-color: #437E84;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 500;
+            text-align: center;
+            padding: 8px 0;
+            width: 150px;
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+
+        .param-input {
+            flex-grow: 1;
+            border: none;
+            border-bottom: 1px solid #707070;
+            padding: 8px 5px;
+            font-size: 16px;
+            color: #333;
+            outline: none;
+            background: transparent;
+        }
+
+        .param-input:focus {
+            border-bottom: 2px solid #437E84;
+        }
+
+        .submit-wrapper {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+            margin-bottom: 40px;
+        }
+
+        .btn-submit {
+            background-color: #437E84;
+            color: #ffffff;
+            border: none;
+            padding: 10px 50px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-submit:hover {
+            background-color: #356469;
+        }
+
+        .btn-submit:active {
+            transform: scale(0.98);
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 10px;
+                margin-top: 20px;
+            }
+            .form-header {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            .filter-group {
+                flex-direction: column !important;
+                width: 100% !important;
+            }
+            .custom-select, .custom-input {
+                width: 100% !important;
+                max-width: none !important;
+            }
+            .parameters-card {
+                padding: 20px;
+                border-radius: 20px;
+            }
+            .param-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .param-label {
+                width: 100%;
+            }
+            .param-input {
+                width: 100%;
+            }
+        }
+    </style>
+    <style>
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            z-index: 2000;
+        }
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background-color: #333;
+            transition: all 0.3s;
+        }
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            .nav-links {
+                display: flex !important;
+                position: fixed;
+                top: 0;
+                right: -250px;
+                width: 250px;
+                height: 100vh;
+                background-color: #ffffff;
+                flex-direction: column !important;
+                padding-top: 70px;
+                padding-left: 20px;
+                padding-right: 20px;
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                transition: right 0.3s ease;
+                z-index: 1500;
+                align-items: flex-start !important;
+                gap: 15px !important;
+                overflow-y: auto;
+            }
+            .nav-links.active {
+                right: 0;
+            }
+            .nav-links a {
+                color: #333 !important;
+                text-shadow: none !important;
+                margin-left: 0 !important;
+                width: 100%;
+                text-align: left;
+                padding: 5px 0;
+            }
+            .nav-links .btn-highlight,
+            .nav-links .btn-logout {
+                color: #ffffff !important;
+                text-align: center;
+                width: 100%;
+                padding: 10px 15px;
+                border-radius: 20px;
+            }
+            .nav-links form {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+            .nav-links form button {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 5px;
+            }
+            .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+            .hamburger.active span:nth-child(2) { opacity: 0; }
+            .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        }
+    </style>
+
+
+
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/" class="logo">Blue Heart</a>
+        <div class="nav-links">
+            <a href="/home">หน้าแรก</a>
+            <a href="/pdata" class="active">ข้อมูลย้อนหลัง</a>
+            {% if session.get('username') %}
+                <a href="/pin">ปักหมุดสถานที่</a>
+            {% endif %}
+            
+            <a href="/game" class="btn-highlight">ภารกิจพิทักษ์รักษาทะเล</a>
+            
+            {% if session.get('role') == 'admin' %}
+                <a href="/admin/reports" class="btn-highlight" style="background-color: #f39c12; margin-right: 10px;">ระบบจัดการ (Admin)</a>
+            {% endif %}
+            {% if session.get('username') %}
+                <a href="/logout" class="btn-logout">ออกจากระบบ ({{ session['username'] }})</a>
+            {% else %}
+                <a href="/login" class="btn-highlight">เข้าสู่ระบบ</a>
+            {% endif %}
+
+            {% if session.get('username') %}
+                <form action="/delete_account" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีผู้ใช้นี้? การกระทำนี้ไม่สามารถย้อนกลับได้');" style="display:inline;">
+                    <button type="submit" style="background-color: #ff4d4d; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 500; margin-left: 20px;">
+                        ลบบัญชีของฉัน
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <form action="/pin" method="POST">
+
+            <div class="form-header">
+                <h1 class="title">ปักหมุดสถานที่</h1>
+                <div class="filter-group">
+                    <select class="custom-select" name="province" required>
+                        <option value="">เลือกจังหวัด ▾</option>
+                        {% for province in provinces %}
+                        <option value="{{ province }}">{{ province }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="text" class="custom-input" name="place_name" placeholder="ชื่อสถานที่" required>
+                    <input type="text" id="coordinates" class="custom-input" name="coordinates" placeholder="พิกัด"
+                        readonly required>
+                </div>
+            </div>
+
+            <div class="map-wrapper">
+                <div id="map"></div>
+            </div>
+
+            <button type="button" id="toggleParamsBtn" class="btn-submit"
+                style="background-color: #3A6367; margin-bottom: 20px;">กรอกค่าต่างๆ (ไม่บังคับ) ▼</button>
+
+            <div id="optionalParams" class="parameters-card" style="display: none;">
+                <div class="param-row">
+                    <div class="param-label">คุณภาพน้ำทะเล</div><input type="text" class="param-input"
+                        name="water_quality">
+                </div>
+                <div class="param-row">
+                    <div class="param-label">MWQI</div><input type="text" class="param-input" name="mwqi">
+                </div>
+                <div class="param-row">
+                    <div class="param-label">DO</div><input type="text" class="param-input" name="do_val">
+                </div>
+                <div class="param-row">
+                    <div class="param-label">TSS</div><input type="text" class="param-input" name="tss">
+                </div>
+                <div class="param-row">
+                    <div class="param-label">pH</div><input type="text" class="param-input" name="ph">
+                </div>
+                <div class="param-row">
+                    <div class="param-label">ความคิดเห็น</div><input type="text" class="param-input" name="comment">
+                </div>
+            </div>
+
+            <div class="submit-wrapper">
+                <button type="submit" class="btn-submit">ส่ง</button>
+            </div>
+
+        </form>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        document.getElementById('toggleParamsBtn').addEventListener('click', function () {
+            const paramsDiv = document.getElementById('optionalParams');
+            if (paramsDiv.style.display === 'none' || paramsDiv.style.display === '') {
+                paramsDiv.style.display = 'flex';
+                this.innerHTML = 'ปิดส่วนกรอกค่าต่างๆ ▲';
+            } else {
+                paramsDiv.style.display = 'none';
+                this.innerHTML = 'กรอกค่าต่างๆ (ไม่บังคับ) ▼';
+            }
+        });
+
+        const thaiBounds = L.latLngBounds(
+            L.latLng(5.61, 97.34),
+            L.latLng(20.46, 105.63)
+        );
+
+        const map = L.map('map', {
+            center: [12.6815, 101.2814],
+            zoom: 6,
+            maxBounds: thaiBounds,
+            maxBoundsViscosity: 1.0,
+            minZoom: 5
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        let currentMarker = null;
+
+        map.on('click', function (e) {
+            if (!thaiBounds.contains(e.latlng)) {
+                alert("กรุณาปักหมุดในพื้นที่ประเทศไทยเท่านั้นครับ");
+                return;
+            }
+
+            const lat = e.latlng.lat.toFixed(6);
+            const lng = e.latlng.lng.toFixed(6);
+
+            document.getElementById('coordinates').value = `${lat}, ${lng}`;
+
+            if (currentMarker) {
+                map.removeLayer(currentMarker);
+            }
+
+            currentMarker = L.marker([lat, lng]).addTo(map)
+                .bindPopup(`<b>พิกัดที่ระบุ</b><br>Lat: ${lat}<br>Lng: ${lng}`)
+                .openPopup();
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!document.querySelector('.hamburger')) {
+                const nav = document.querySelector('.navbar');
+                const navLinks = document.querySelector('.nav-links');
+                if (nav && navLinks) {
+                    const hamburger = document.createElement('div');
+                    hamburger.className = 'hamburger';
+                    hamburger.innerHTML = '<span></span><span></span><span></span>';
+                    nav.insertBefore(hamburger, navLinks);
+                    
+                    hamburger.addEventListener('click', function() {
+                        hamburger.classList.toggle('active');
+                        navLinks.classList.toggle('active');
+                    });
+                }
+            }
+        });
+    </script>
+
+</body>
+
+</html>

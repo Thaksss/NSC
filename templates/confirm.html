@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Heart - ยืนยันมลพิษ</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        body {
+            background-color: #FDF9EC;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #ffffff;
+            padding: 0 24px;
+            height: 60px;
+            border-bottom: 1px solid #e5e5e0;
+            z-index: 2000;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: #346675;
+            text-decoration: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #2c3e50;
+            margin-left: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .main-container {
+            max-width: 1100px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .form-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 32px;
+            font-weight: 600;
+            color: #3A6367;
+        }
+
+        .filter-container {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #A6B9BA;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .filter-btn {
+            padding: 10px 20px;
+            border: 2px solid #3498db;
+            background: white;
+            color: #3498db;
+            border-radius: 20px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn.active {
+            background: #3498db;
+            color: white;
+        }
+        
+        .filter-btn-green {
+            border: 2px solid #2ecc71;
+            color: #2ecc71;
+        }
+        
+        .filter-btn-green.active {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .map-wrapper {
+            position: relative;
+            background: #ffffff;
+            border: 3px solid #A6B9BA;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 40px;
+        }
+
+        #map {
+            width: 100%;
+            height: 600px;
+            z-index: 1;
+        }
+
+        .btn-pass {
+            background-color: #2ecc71;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            width: 48%;
+        }
+
+        .btn-fail {
+            background-color: #e74c3c;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            width: 48%;
+        }
+
+        .btn-disabled {
+            background-color: #d1d5db;
+            color: #6b7280;
+            padding: 6px 16px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-top: 15px;
+            font-weight: 500;
+            text-align: center;
+            width: 100%;
+            cursor: not-allowed;
+        }
+        
+        .clear-img-wrapper {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .clear-img-wrapper img {
+            width: 48%;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+    </style>
+    <style>
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            z-index: 2000;
+        }
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background-color: #333;
+            transition: all 0.3s;
+        }
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            .nav-links {
+                display: flex !important;
+                position: fixed;
+                top: 0;
+                right: -250px;
+                width: 250px;
+                height: 100vh;
+                background-color: #ffffff;
+                flex-direction: column !important;
+                padding-top: 70px;
+                padding-left: 20px;
+                padding-right: 20px;
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                transition: right 0.3s ease;
+                z-index: 1500;
+                align-items: flex-start !important;
+                gap: 15px !important;
+                overflow-y: auto;
+            }
+            .nav-links.active {
+                right: 0;
+            }
+            .nav-links a {
+                color: #333 !important;
+                text-shadow: none !important;
+                margin-left: 0 !important;
+                width: 100%;
+                text-align: left;
+                padding: 5px 0;
+            }
+            .nav-links .btn-highlight,
+            .nav-links .btn-logout {
+                color: #ffffff !important;
+                text-align: center;
+                width: 100%;
+                padding: 10px 15px;
+                border-radius: 20px;
+            }
+            .nav-links form {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+            .nav-links form button {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 5px;
+            }
+            .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+            .hamburger.active span:nth-child(2) { opacity: 0; }
+            .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        }
+    </style>
+
+
+
+</head>
+
+<body>
+    <nav class="navbar">
+        <a href="/" class="logo">Blue Heart</a>
+        <div class="nav-links">
+            <a href="/home">หน้าแรก</a>
+            <a href="/game">ภารกิจ</a>
+            {% if session.get('role') == 'admin' %}
+                <a href="/admin/reports" class="btn-highlight" style="background-color: #f39c12; margin-right: 10px;">ระบบจัดการ (Admin)</a>
+            {% endif %}
+            {% if session.get('username') %}
+                <a href="/logout">ออกจากระบบ</a>
+            {% else %}
+                <a href="/login">เข้าสู่ระบบ</a>
+            {% endif %}
+        </div>
+    </nav>
+    
+    <div class="main-container">
+        <div class="form-header">
+            <h1 class="title">ยืนยันมลพิษ</h1>
+        </div>
+        
+        <div class="filter-container">
+            <button class="filter-btn active" id="btn-filter-report" onclick="setFilter('report')">รายงานมลพิษ (สีน้ำเงิน)</button>
+            <button class="filter-btn filter-btn-green" id="btn-filter-clear" onclick="setFilter('clear')">การเคลียร์มลพิษ (สีเขียว)</button>
+        </div>
+
+        <div class="map-wrapper">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const reports = {{ reports | tojson | safe }};
+        const clears = {{ clears | tojson | safe }};
+        
+        let userMarker = null;
+        let userLocation = null;
+        let currentFilter = 'report';
+        let currentMarkers = [];
+
+        const thaiBounds = L.latLngBounds(
+            L.latLng(5.61, 97.34),
+            L.latLng(20.46, 105.63)
+        );
+
+        const map = L.map('map', {
+            center: [13.7563, 100.5018],
+            zoom: 6,
+            maxBounds: thaiBounds,
+            maxBoundsViscosity: 1.0,
+            minZoom: 5
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        const userIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: "<div style='background-color:#e74c3c; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);'></div>",
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+        });
+
+        const blueIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: "<div style='background-color:#3498db; width:24px; height:24px; border-radius:50%; border:2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.5);'></div>",
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+
+        const greenIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: "<div style='background-color:#2ecc71; width:24px; height:24px; border-radius:50%; border:2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.5);'></div>",
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userLocation = L.latLng(position.coords.latitude, position.coords.longitude);
+                    map.setView(userLocation, 12);
+                    
+                    userMarker = L.marker(userLocation, {icon: userIcon}).addTo(map).bindPopup("<b>ตำแหน่งปัจจุบันของคุณ</b>");
+                    
+                    renderMarkers();
+                },
+                (error) => {
+                    console.log("Geolocation error:", error);
+                    alert('ระบบไม่สามารถดึงตำแหน่งของคุณได้ หากไม่อนุญาตจะไม่สามารถกดโหวตได้ครับ');
+                    renderMarkers();
+                },
+                { enableHighAccuracy: true }
+            );
+        } else {
+            renderMarkers();
+        }
+
+        function setFilter(type) {
+            currentFilter = type;
+            document.getElementById('btn-filter-report').classList.remove('active');
+            document.getElementById('btn-filter-clear').classList.remove('active');
+            document.getElementById(`btn-filter-${type}`).classList.add('active');
+            renderMarkers();
+        }
+
+        function renderMarkers() {
+            currentMarkers.forEach(m => map.removeLayer(m));
+            currentMarkers = [];
+
+            const dataToRender = currentFilter === 'report' ? reports : clears;
+            const iconToUse = currentFilter === 'report' ? blueIcon : greenIcon;
+
+            dataToRender.forEach(item => {
+                const itemLatLng = L.latLng(item.lat, item.lng);
+                const marker = L.marker(itemLatLng, {icon: iconToUse}).addTo(map);
+                
+                marker.on('click', function() {
+                    let popupContent = `<div style="text-align:center; min-width: 180px;" id="popup-content-${item.id}">`;
+                    popupContent += `<b>ผู้ดำเนินการ:</b> ${item.username}<br>`;
+                    
+                    if (currentFilter === 'report') {
+                        popupContent += `<img src="/${item.image_path}" width="180" style="margin-top:10px; border-radius:8px; object-fit: cover;"><br>`;
+                    } else {
+                        popupContent += `
+                        <div class="clear-img-wrapper">
+                            <div><p style="font-size:12px;">ก่อน</p><img src="/${item.before_image}"></div>
+                            <div><p style="font-size:12px;">หลัง</p><img src="/${item.after_image}"></div>
+                        </div>`;
+                    }
+                    
+                    if (userLocation) {
+                        const distance = userLocation.distanceTo(itemLatLng); // in meters
+                        
+                        if (distance <= 1000) {
+                            popupContent += `<div style="color:#27ae60; margin-top:10px; font-size:12px;">ระยะห่าง ${(distance/1000).toFixed(2)} กม.</div>`;
+                            popupContent += `<div style="display:flex; justify-content:space-between; margin-top:10px;">
+                                <button class="btn-pass" onclick="submitVote('${currentFilter}', ${item.id}, 'pass')">ผ่าน</button>
+                                <button class="btn-fail" onclick="submitVote('${currentFilter}', ${item.id}, 'fail')">ไม่ผ่าน</button>
+                            </div>`;
+                        } else {
+                            popupContent += `<div style="color:#e74c3c; margin-top:10px; font-size:12px;">คุณอยู่ห่างเกินไป (${(distance/1000).toFixed(2)} กม.)<br>ต้องอยู่ในรัศมี 1 กม.</div>`;
+                            popupContent += `<span class="btn-disabled">โหวตไม่ได้</span>`;
+                        }
+                    } else {
+                        popupContent += `<div style="color:#e74c3c; margin-top:10px; font-size:12px;">รอพิกัด GPS ของคุณ...</div>`;
+                        popupContent += `<span class="btn-disabled">โหวตไม่ได้</span>`;
+                    }
+                    
+                    popupContent += `</div>`;
+                    
+                    marker.bindPopup(popupContent).openPopup();
+                });
+                
+                marker.itemId = item.id;
+                currentMarkers.push(marker);
+            });
+        }
+        
+        async function submitVote(type, id, vote) {
+            const container = document.getElementById(`popup-content-${id}`);
+            if(container) container.innerHTML = `<div style="padding:20px;">กำลังส่งข้อมูล...</div>`;
+            
+            try {
+                const response = await fetch('/submit_vote', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        target_type: type,
+                        target_id: id,
+                        vote: vote
+                    })
+                });
+                
+                const result = await response.json();
+                if(result.success) {
+                    if(type === 'report') {
+                        const idx = reports.findIndex(r => r.id === id);
+                        if(idx > -1) reports.splice(idx, 1);
+                    } else {
+                        const idx = clears.findIndex(c => c.id === id);
+                        if(idx > -1) clears.splice(idx, 1);
+                    }
+                    map.closePopup();
+                    renderMarkers();
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + result.message);
+                    map.closePopup();
+                }
+            } catch (err) {
+                console.error("Vote error:", err);
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อ");
+                map.closePopup();
+            }
+        }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!document.querySelector('.hamburger')) {
+                const nav = document.querySelector('.navbar');
+                const navLinks = document.querySelector('.nav-links');
+                if (nav && navLinks) {
+                    const hamburger = document.createElement('div');
+                    hamburger.className = 'hamburger';
+                    hamburger.innerHTML = '<span></span><span></span><span></span>';
+                    nav.insertBefore(hamburger, navLinks);
+                    
+                    hamburger.addEventListener('click', function() {
+                        hamburger.classList.toggle('active');
+                        navLinks.classList.toggle('active');
+                    });
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

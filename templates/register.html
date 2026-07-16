@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Heart - สมัครสมาชิก</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+    <style>
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            z-index: 2000;
+        }
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background-color: #333;
+            transition: all 0.3s;
+        }
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            .nav-links {
+                display: flex !important;
+                position: fixed;
+                top: 0;
+                right: -250px;
+                width: 250px;
+                height: 100vh;
+                background-color: #ffffff;
+                flex-direction: column !important;
+                padding-top: 70px;
+                padding-left: 20px;
+                padding-right: 20px;
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                transition: right 0.3s ease;
+                z-index: 1500;
+                align-items: flex-start !important;
+                gap: 15px !important;
+                overflow-y: auto;
+            }
+            .nav-links.active {
+                right: 0;
+            }
+            .nav-links a {
+                color: #333 !important;
+                text-shadow: none !important;
+                margin-left: 0 !important;
+                width: 100%;
+                text-align: left;
+                padding: 5px 0;
+            }
+            .nav-links .btn-highlight,
+            .nav-links .btn-logout {
+                color: #ffffff !important;
+                text-align: center;
+                width: 100%;
+                padding: 10px 15px;
+                border-radius: 20px;
+            }
+            .nav-links form {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+            .nav-links form button {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 5px;
+            }
+            .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+            .hamburger.active span:nth-child(2) { opacity: 0; }
+            .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        }
+    </style>
+
+
+
+</head>
+
+<body>
+             
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        body, html {
+            height: 100%;
+            width: 100%;
+            background-color: #0b1d28; 
+            overflow: hidden; 
+        }
+
+        .hero {
+            height: 100vh;
+            width: 100%;
+            position: relative;
+            background-image: url('https://scontent.fbkk9-3.fna.fbcdn.net/v/t1.15752-9/735429808_1577004827317497_7159849657123700813_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1365&ctp=s2048x1365&_nc_cat=106&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeEX6RPm6YS17r8PXy9ubBH-ZGS_V_6bHUdkZL9X_psdR8hK2k_fVfZd4FG_zH4Fv-FwaA511z6OwP0x7QtkIVmV&_nc_ohc=GaYdKsOtnKoQ7kNvwEpTid_&_nc_oc=AdpB2AsnRaqTfONrmEyef6RtnFTCU4ch39GTP3w_qVH_7eDtvL2QCzQ6Icx7uwpxd81KHtTEkgyERlqSpWvPnuLb&_nc_zt=23&_nc_ht=scontent.fbkk9-3.fna&_nc_ss=7b2a8&oh=03_Q7cD5wFvF2v10NQDZ6WjlJmuAkneu_zqIWLe1u0JP1r1qN5fWA&oe=6A71AC0B');
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: cover; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        .register-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 20px;
+        }
+
+        .register-box {
+            background: rgba(255, 255, 255, 0.45); 
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px);
+            width: 100%;
+            max-width: 480px;
+            padding: 35px 40px;
+            border-radius: 30px; 
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            color: #ffffff;
+        }
+
+        .register-box h2 {
+            font-size: 2.3rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .register-box p {
+            font-size: 0.95rem;
+            font-weight: 300;
+            opacity: 0.9;
+            margin-bottom: 25px;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .input-group {
+            width: 100%;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 5px;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            background: rgba(255, 255, 255, 0.25);
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50px;
+            color: #ffffff;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .input-group input:focus {
+            background: rgba(255, 255, 255, 0.4);
+            border-color: #ffffff;
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.65);
+        }
+
+        .btn-register {
+            width: 100%;
+            background-color: #3f7b88; 
+            color: #ffffff;
+            border: none;
+            padding: 11px;
+            border-radius: 50px;
+            font-size: 1.15rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn-register:hover {
+            background-color: #33646f;
+            transform: translateY(-1px);
+        }
+
+        .register-footer-links {
+            font-size: 0.95rem;
+            font-weight: 400;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .register-footer-links a {
+            color: #ffffff;
+            text-decoration: underline;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+    
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: transparent;
+            padding: 0 24px;
+            height: 60px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            z-index: 1000; 
+        }
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #ffffff;
+            margin-left: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-links .btn-highlight {
+            background-color: #346675;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+
+        .nav-links .btn-highlight:hover {
+            background-color: #346675;
+        }
+
+        @media (max-width: 768px) {
+            .register-box {
+                width: 90%;
+                max-width: 90%;
+                padding: 30px 20px;
+                margin: 0 15px;
+            }
+            .register-box h2 {
+                font-size: 2rem;
+            }
+            .register-box p {
+                font-size: 0.9rem;
+                margin-bottom: 20px;
+            }
+            .input-group {
+                margin-bottom: 15px;
+            }
+            .input-group label {
+                font-size: 0.95rem;
+            }
+            .input-group input {
+                padding: 10px 15px;
+                font-size: 0.95rem;
+            }
+            .btn-register {
+                font-size: 1.1rem;
+                padding: 10px;
+            }
+        }
+</style>
+
+        <div class="hero">
+        <nav class="navbar">
+            <a href="/" class="logo">Blue Heart</a>
+            <div class="nav-links">
+                <a href="/home">หน้าแรก</a>
+                <a href="/pdata">ข้อมูลย้อนหลัง</a>
+                {% if session.get('username') %}
+                    <a href="/pin">ปักหมุดสถานที่</a>
+                {% endif %}
+
+                <a href="/game" class="btn-highlight">ภารกิจพิทักษ์รักษาทะเล</a>
+
+        </nav>
+
+        <div class="register-wrapper">
+            <div class="register-box">
+                <h2>สมัครสมาชิก</h2>
+                <p>ร่วมเป็นส่วนหนึ่งในชุมชนผู้พิทักษ์ท้องทะเลของเรา</p>
+                
+                {% if error %}
+                    <p style="color: #ff6b6b; font-weight: 500; margin-bottom: 15px; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);">{{ error }}</p>
+                {% endif %}
+
+                {% if step == 'otp' %}
+                    <p>กรุณากรอกรหัส OTP 6 หลักที่เราส่งไปยังอีเมลของคุณเพื่อยืนยันตัวตน</p>
+                    <form action="/verify-register-otp" method="POST">
+                        <div class="input-group">
+                            <label for="otp">รหัสยืนยัน (OTP)</label>
+                            <input type="text" id="otp" name="otp" placeholder="123456" required>
+                        </div>
+                        <button type="submit" class="btn-register">ยืนยันอีเมลและสมัครสมาชิก</button>
+                    </form>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <form action="/resend-register-otp" method="POST">
+                            <button type="submit" style="background: none; border: none; color: #ffffff; text-decoration: underline; font-size: 0.95rem; cursor: pointer;">ยังไม่ได้รับรหัส? ส่งรหัสใหม่</button>
+                        </form>
+                    </div>
+                {% else %}
+                    <form action="/register" method="POST">
+                        <div class="input-group">
+                            <label for="username">ชื่อผู้ใช้ (Username)</label>
+                            <input type="text" id="username" name="username" placeholder="สร้างชื่อผู้ใช้ของคุณ" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="email">อีเมล (Email)</label>
+                            <input type="email" id="email" name="email" placeholder="example@mail.com" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="password">รหัสผ่าน (Password)</label>
+                            <input type="password" id="password" name="password" placeholder="ตั้งรหัสผ่าน 6 ตัวขึ้นไป มีภาษาอังกฤษ" required pattern="^(?=.*[a-zA-Z]).{6,}$" title="รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษรและต้องมีตัวอักษรภาษาอังกฤษ">
+                        </div>
+                        
+                        <button type="submit" class="btn-register">สร้างบัญชีผู้ใช้</button>
+                    </form>
+                {% endif %}
+                
+                <div class="register-footer-links">
+                    มีบัญชีผู้ใช้อยู่แล้ว? <a href="/login">เข้าสู่ระบบที่นี่</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!document.querySelector('.hamburger')) {
+                const nav = document.querySelector('.navbar');
+                const navLinks = document.querySelector('.nav-links');
+                if (nav && navLinks) {
+                    const hamburger = document.createElement('div');
+                    hamburger.className = 'hamburger';
+                    hamburger.innerHTML = '<span></span><span></span><span></span>';
+                    nav.insertBefore(hamburger, navLinks);
+                    
+                    hamburger.addEventListener('click', function() {
+                        hamburger.classList.toggle('active');
+                        navLinks.classList.toggle('active');
+                    });
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

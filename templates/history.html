@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Heart - ประวัติภารกิจ</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(180deg, #74BCD9 0%, #D8EDF2 50%, #FDF9EC 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.5);
+            padding: 0 24px;
+            height: 60px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: #2c3e50;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #2c3e50;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .page-title {
+            margin-top: 40px;
+            font-size: 40px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .glass-container {
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 900px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            margin-bottom: 50px;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .tab-btn {
+            padding: 10px 25px;
+            border-radius: 25px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.5);
+            color: #4a6fa5;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .tab-btn.active {
+            background: #4a6fa5;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .history-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            align-items: center;
+        }
+
+        .history-img-wrapper {
+            flex-shrink: 0;
+            width: 150px;
+            height: 150px;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            gap: 5px;
+            background: #f0f0f0;
+        }
+
+        .history-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .history-img-wrapper.double img {
+            width: 50%;
+        }
+
+        .history-info {
+            flex-grow: 1;
+        }
+
+        .info-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .info-date {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+        
+        .info-detail {
+            font-size: 15px;
+            color: #34495e;
+            margin-bottom: 15px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved, .status-cleared {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-pass {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-fail {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 18px;
+            padding: 40px;
+        }
+    </style>
+    <style>
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            z-index: 2000;
+        }
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background-color: #333;
+            transition: all 0.3s;
+        }
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            .nav-links {
+                display: flex !important;
+                position: fixed;
+                top: 0;
+                right: -250px;
+                width: 250px;
+                height: 100vh;
+                background-color: #ffffff;
+                flex-direction: column !important;
+                padding-top: 70px;
+                padding-left: 20px;
+                padding-right: 20px;
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                transition: right 0.3s ease;
+                z-index: 1500;
+                align-items: flex-start !important;
+                gap: 15px !important;
+                overflow-y: auto;
+            }
+            .nav-links.active {
+                right: 0;
+            }
+            .nav-links a {
+                color: #333 !important;
+                text-shadow: none !important;
+                margin-left: 0 !important;
+                width: 100%;
+                text-align: left;
+                padding: 5px 0;
+            }
+            .nav-links .btn-highlight,
+            .nav-links .btn-logout {
+                color: #ffffff !important;
+                text-align: center;
+                width: 100%;
+                padding: 10px 15px;
+                border-radius: 20px;
+            }
+            .nav-links form {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+            .nav-links form button {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 5px;
+            }
+            .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+            .hamburger.active span:nth-child(2) { opacity: 0; }
+            .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        }
+    </style>
+
+
+
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="/" class="logo">BLUE HEART</a>
+        <div class="nav-links">
+            <a href="/ingame">กลับหน้าภารกิจ</a>
+            <a href="/logout">ออกจากระบบ ⍈</a>
+        </div>
+    </nav>
+
+    <div class="page-title">ประวัติภารกิจ</div>
+
+    <div class="glass-container">
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('report')">รายงานมลพิษ</button>
+            <button class="tab-btn" onclick="switchTab('clear')">เคลียร์มลพิษ</button>
+            <button class="tab-btn" onclick="switchTab('vote')">ยืนยันมลพิษ</button>
+        </div>
+
+        <div id="tab-report" class="tab-content active">
+            <div class="history-list">
+                {% if reports %}
+                    {% for item in reports %}
+                    <div class="history-card">
+                        <div class="history-img-wrapper">
+                            <img src="/{{ item.image_path }}" alt="Report Image">
+                        </div>
+                        <div class="history-info">
+                            <div class="info-title">รายงานการพบขยะ</div>
+                            <div class="info-date">เมื่อ: {{ item.created_at }}</div>
+                            
+                            {% if item.status == 'pending' %}
+                                <div class="status-badge status-pending">รอการตรวจสอบจากแอดมิน</div>
+                            {% elif item.status == 'approved' %}
+                                <div class="status-badge status-approved">ตรวจสอบแล้ว (แสดงบนแผนที่)</div>
+                            {% elif item.status == 'cleared' %}
+                                <div class="status-badge status-cleared">ถูกเคลียร์เรียบร้อยแล้ว</div>
+                            {% elif item.status == 'rejected' %}
+                                <div class="status-badge status-rejected">ถูกปฏิเสธ</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">ยังไม่มีประวัติการรายงานมลพิษ</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div id="tab-clear" class="tab-content">
+            <div class="history-list">
+                {% if clears %}
+                    {% for item in clears %}
+                    <div class="history-card">
+                        <div class="history-img-wrapper double">
+                            <img src="/{{ item.before_image }}" alt="Before">
+                            <img src="/{{ item.after_image }}" alt="After">
+                        </div>
+                        <div class="history-info">
+                            <div class="info-title">เคลียร์ขยะพื้นที่มลพิษ</div>
+                            <div class="info-date">เมื่อ: {{ item.created_at }}</div>
+                            
+                            {% if item.status == 'pending' %}
+                                <div class="status-badge status-pending">รอการตรวจสอบจากแอดมิน</div>
+                            {% elif item.status == 'approved' %}
+                                <div class="status-badge status-approved">เคลียร์สำเร็จ ได้รับคะแนนแล้ว</div>
+                            {% elif item.status == 'rejected' %}
+                                <div class="status-badge status-rejected">ถูกปฏิเสธ</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">ยังไม่มีประวัติการเคลียร์มลพิษ</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div id="tab-vote" class="tab-content">
+            <div class="history-list">
+                {% if votes %}
+                    {% for item in votes %}
+                    <div class="history-card">
+                        {% if item.target_type == 'report' %}
+                            <div class="history-img-wrapper">
+                                <img src="/{{ item.report_img }}" alt="Report">
+                            </div>
+                        {% else %}
+                            <div class="history-img-wrapper double">
+                                <img src="/{{ item.clear_before }}" alt="Before">
+                                <img src="/{{ item.clear_after }}" alt="After">
+                            </div>
+                        {% endif %}
+                        
+                        <div class="history-info">
+                            <div class="info-title">
+                                ยืนยันข้อมูล {% if item.target_type == 'report' %}การรายงานมลพิษ{% else %}การเคลียร์มลพิษ{% endif %}
+                            </div>
+                            <div class="info-date">เมื่อ: {{ item.created_at }}</div>
+                            
+                            <div style="margin-bottom: 5px;">คุณโหวตว่า:</div>
+                            {% if item.vote == 'pass' %}
+                                <div class="status-badge status-pass">ผ่าน</div>
+                            {% else %}
+                                <div class="status-badge status-fail">ไม่ผ่าน</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">ยังไม่มีประวัติการยืนยันมลพิษ</div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+        }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!document.querySelector('.hamburger')) {
+                const nav = document.querySelector('.navbar');
+                const navLinks = document.querySelector('.nav-links');
+                if (nav && navLinks) {
+                    const hamburger = document.createElement('div');
+                    hamburger.className = 'hamburger';
+                    hamburger.innerHTML = '<span></span><span></span><span></span>';
+                    nav.insertBefore(hamburger, navLinks);
+                    
+                    hamburger.addEventListener('click', function() {
+                        hamburger.classList.toggle('active');
+                        navLinks.classList.toggle('active');
+                    });
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

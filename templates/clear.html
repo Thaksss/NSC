@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Heart - จุดเคลียร์มลพิษ</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        body {
+            background-color: #FDF9EC;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #ffffff;
+            padding: 0 24px;
+            height: 60px;
+            border-bottom: 1px solid #e5e5e0;
+            z-index: 2000;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: #346675;
+            text-decoration: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #2c3e50;
+            margin-left: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-links .btn-highlight {
+            background-color: #346675;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+
+        .nav-links .btn-highlight:hover {
+            background-color: #254a55;
+        }
+
+        .main-container {
+            max-width: 1100px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .form-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 32px;
+            font-weight: 600;
+            color: #3A6367;
+        }
+
+        .map-wrapper {
+            position: relative;
+            background: #ffffff;
+            border: 3px solid #A6B9BA;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 40px;
+        }
+
+        #map {
+            width: 100%;
+            height: 600px;
+            z-index: 1;
+        }
+        
+        .btn-enter {
+            background-color: #437E84;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 12px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 15px;
+            font-weight: 500;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .btn-enter:hover {
+            background-color: #356469;
+        }
+
+        .btn-disabled {
+            background-color: #d1d5db;
+            color: #6b7280;
+            padding: 6px 16px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-top: 15px;
+            font-weight: 500;
+            text-align: center;
+            width: 100%;
+            cursor: not-allowed;
+        }
+
+        .legend-container {
+            margin-bottom: 20px; 
+            display: flex; 
+            gap: 20px; 
+            align-items: center; 
+            justify-content: center; 
+            background: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            border: 1px solid #A6B9BA; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .legend-item {
+            display: flex; 
+            align-items: center; 
+            gap: 8px;
+        }
+        .legend-text {
+            font-weight: 500; 
+            color: #333;
+        }
+        .legend-text-small {
+            font-size: 14px; 
+            color: #666;
+        }
+        .legend-dot {
+            width: 24px; 
+            height: 24px; 
+            border-radius: 50%; 
+            border: 2px solid white; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+        }
+        .legend-dot-small {
+            width: 16px; 
+            height: 16px; 
+            border-radius: 50%; 
+            border: 2px solid white; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+        }
+        .legend-divider {
+            margin-left: 10px; 
+            border-left: 1px solid #ccc; 
+            padding-left: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .title {
+                font-size: 24px !important;
+                text-align: center;
+                width: 100%;
+            }
+            .form-header {
+                justify-content: center;
+            }
+            .legend-container {
+                flex-wrap: wrap;
+                gap: 10px;
+                padding: 10px;
+            }
+            .legend-item {
+                gap: 5px;
+            }
+            .legend-text {
+                font-size: 13px;
+            }
+            .legend-text-small {
+                font-size: 12px;
+            }
+            .legend-dot {
+                width: 16px;
+                height: 16px;
+            }
+            .legend-dot-small {
+                width: 12px;
+                height: 12px;
+            }
+            .legend-divider {
+                border-left: none;
+                margin-left: 0;
+                padding-left: 0;
+                width: 100%;
+                justify-content: center;
+                margin-top: 5px;
+            }
+            .main-container {
+                margin: 20px auto;
+            }
+        }
+    </style>
+    <style>
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            z-index: 2000;
+        }
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background-color: #333;
+            transition: all 0.3s;
+        }
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            .nav-links {
+                display: flex !important;
+                position: fixed;
+                top: 0;
+                right: -250px;
+                width: 250px;
+                height: 100vh;
+                background-color: #ffffff;
+                flex-direction: column !important;
+                padding-top: 70px;
+                padding-left: 20px;
+                padding-right: 20px;
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                transition: right 0.3s ease;
+                z-index: 1500;
+                align-items: flex-start !important;
+                gap: 15px !important;
+                overflow-y: auto;
+            }
+            .nav-links.active {
+                right: 0;
+            }
+            .nav-links a {
+                color: #333 !important;
+                text-shadow: none !important;
+                margin-left: 0 !important;
+                width: 100%;
+                text-align: left;
+                padding: 5px 0;
+            }
+            .nav-links .btn-highlight,
+            .nav-links .btn-logout {
+                color: #ffffff !important;
+                text-align: center;
+                width: 100%;
+                padding: 10px 15px;
+                border-radius: 20px;
+            }
+            .nav-links form {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+            .nav-links form button {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 5px;
+            }
+            .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+            .hamburger.active span:nth-child(2) { opacity: 0; }
+            .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        }
+    </style>
+
+
+
+</head>
+
+<body>
+    <nav class="navbar">
+        <a href="/" class="logo">Blue Heart</a>
+        <div class="nav-links">
+            <a href="/home">หน้าแรก</a>
+            <a href="/game">ภารกิจ</a>
+            {% if session.get('role') == 'admin' %}
+                <a href="/admin/reports" class="btn-highlight" style="background-color: #f39c12; margin-right: 10px;">ระบบจัดการ (Admin)</a>
+            {% endif %}
+            {% if session.get('username') %}
+                <a href="/logout">ออกจากระบบ</a>
+            {% else %}
+                <a href="/login">เข้าสู่ระบบ</a>
+            {% endif %}
+        </div>
+    </nav>
+    
+    <div class="main-container">
+        <div class="form-header">
+            <h1 class="title">จุดมลพิษที่รอการเคลียร์</h1>
+        </div>
+        
+        <div class="legend-container">
+            <div class="legend-item">
+                <div class="legend-dot" style="background-color: #3498db;"></div>
+                <span class="legend-text">สีน้ำเงิน = รอเคลียร์</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background-color: #f1c40f;"></div>
+                <span class="legend-text">สีเหลือง = รออนุมัติการเคลียร์</span>
+            </div>
+            <div class="legend-item legend-divider">
+                <div class="legend-dot-small" style="background-color: #e74c3c;"></div>
+                <span class="legend-text-small">จุดแดง = ตำแหน่งของคุณ</span>
+            </div>
+        </div>
+
+        <div class="map-wrapper">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const reports = {{ reports | tojson | safe }};
+        let userMarker = null;
+        let userLocation = null;
+
+        const thaiBounds = L.latLngBounds(
+            L.latLng(5.61, 97.34),
+            L.latLng(20.46, 105.63)
+        );
+
+        const map = L.map('map', {
+            center: [13.7563, 100.5018],
+            zoom: 6,
+            maxBounds: thaiBounds,
+            maxBoundsViscosity: 1.0,
+            minZoom: 5
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userLocation = L.latLng(position.coords.latitude, position.coords.longitude);
+                    map.setView(userLocation, 12);
+                    
+                    const userIcon = L.divIcon({
+                        className: 'custom-div-icon',
+                        html: "<div style='background-color:#e74c3c; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);'></div>",
+                        iconSize: [22, 22],
+                        iconAnchor: [11, 11]
+                    });
+                    
+                    userMarker = L.marker(userLocation, {icon: userIcon}).addTo(map).bindPopup("<b>ตำแหน่งปัจจุบันของคุณ</b>");
+                },
+                (error) => {
+                    console.log("Geolocation error:", error);
+                    alert('ระบบไม่สามารถดึงตำแหน่งของคุณได้ หากไม่อนุญาตจะไม่สามารถกดเคลียร์มลพิษได้ครับ');
+                },
+                { enableHighAccuracy: true }
+            );
+        }
+
+        const blueIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: "<div style='background-color:#3498db; width:24px; height:24px; border-radius:50%; border:2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.5);'></div>",
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+
+        const yellowIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: "<div style='background-color:#f1c40f; width:24px; height:24px; border-radius:50%; border:2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.5);'></div>",
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+
+        reports.forEach(report => {
+            const reportLatLng = L.latLng(report.lat, report.lng);
+            const icon = report.is_pending_clear ? yellowIcon : blueIcon;
+            const marker = L.marker(reportLatLng, {icon: icon}).addTo(map);
+            
+            marker.on('click', function() {
+                let popupContent = `<div style="text-align:center; min-width: 160px;">`;
+                popupContent += `<b>ผู้รายงาน:</b> ${report.username}<br>`;
+                popupContent += `<img src="/${report.image_path}" width="160" style="margin-top:10px; border-radius:8px; object-fit: cover;"><br>`;
+                
+                if (report.is_pending_clear) {
+                    popupContent += `<div style="color:#f39c12; margin-top:10px; font-weight:bold; font-size:14px;">กำลังรอแอดมินอนุมัติการเคลียร์</div>`;
+                    popupContent += `<span class="btn-disabled">รออนุมัติ</span>`;
+                } else {
+                    if (userLocation) {
+                        const distance = userLocation.distanceTo(reportLatLng); // in meters
+                        
+                        if (distance <= 5000000) {
+                            popupContent += `<div style="color:#27ae60; margin-top:10px; font-size:12px;">ระยะห่าง ${(distance/1000).toFixed(2)} กม.</div>`;
+                            popupContent += `<a href="/inclear/${report.id}" class="btn-enter" style="display:block; margin-top:10px; background-color:#27ae60; color:white; padding:8px 12px; border-radius:12px; text-decoration:none;">เข้าเคลียร์มลพิษ</a>`;
+                        } else {
+                            popupContent += `<div style="color:#e74c3c; margin-top:10px; font-size:12px;">คุณอยู่ห่างเกินไป (${(distance/1000).toFixed(2)} กม.)<br>ต้องอยู่ในรัศมี 5000 กม.</div>`;
+                            popupContent += `<span class="btn-disabled">เข้าเคลียร์มลพิษ</span>`;
+                        }
+                    } else {
+                        popupContent += `<div style="color:#e74c3c; margin-top:10px; font-size:12px;">รอพิกัด GPS ของคุณ...</div>`;
+                        popupContent += `<span class="btn-disabled">เข้าเคลียร์มลพิษ</span>`;
+                    }
+                }
+                
+                popupContent += `</div>`;
+                
+                marker.bindPopup(popupContent).openPopup();
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!document.querySelector('.hamburger')) {
+                const nav = document.querySelector('.navbar');
+                const navLinks = document.querySelector('.nav-links');
+                if (nav && navLinks) {
+                    const hamburger = document.createElement('div');
+                    hamburger.className = 'hamburger';
+                    hamburger.innerHTML = '<span></span><span></span><span></span>';
+                    nav.insertBefore(hamburger, navLinks);
+                    
+                    hamburger.addEventListener('click', function() {
+                        hamburger.classList.toggle('active');
+                        navLinks.classList.toggle('active');
+                    });
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

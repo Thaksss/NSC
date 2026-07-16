@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Heart - Admin Reports</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+        }
+        body {
+            background-color: #f7f6f3;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #346675;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .report-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+        }
+        .report-img {
+            max-width: 200px;
+            border-radius: 4px;
+        }
+        .report-info {
+            flex-grow: 1;
+        }
+        .report-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .btn-approve {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .btn-reject {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .no-reports {
+            text-align: center;
+            color: #7f8c8d;
+        }
+        .clear-img-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+        .clear-img {
+            max-width: 150px;
+            border-radius: 4px;
+        }
+        .section-title {
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #346675;
+            text-align: center;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+    </style>
+    <style>
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            z-index: 2000;
+        }
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background-color: #333;
+            transition: all 0.3s;
+        }
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            .nav-links {
+                display: flex !important;
+                position: fixed;
+                top: 0;
+                right: -250px;
+                width: 250px;
+                height: 100vh;
+                background-color: #ffffff;
+                flex-direction: column !important;
+                padding-top: 70px;
+                padding-left: 20px;
+                padding-right: 20px;
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                transition: right 0.3s ease;
+                z-index: 1500;
+                align-items: flex-start !important;
+                gap: 15px !important;
+                overflow-y: auto;
+            }
+            .nav-links.active {
+                right: 0;
+            }
+            .nav-links a {
+                color: #333 !important;
+                text-shadow: none !important;
+                margin-left: 0 !important;
+                width: 100%;
+                text-align: left;
+                padding: 5px 0;
+            }
+            .nav-links .btn-highlight,
+            .nav-links .btn-logout {
+                color: #ffffff !important;
+                text-align: center;
+                width: 100%;
+                padding: 10px 15px;
+                border-radius: 20px;
+            }
+            .nav-links form {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+            .nav-links form button {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 5px;
+            }
+            .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+            .hamburger.active span:nth-child(2) { opacity: 0; }
+            .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        }
+    </style>
+
+
+
+</head>
+<body>
+    <div class="container">
+        <h1>รายงานมลพิษที่รอการตรวจสอบ</h1>
+        <a href="/" style="display: block; margin-bottom: 20px;">กลับหน้าแรก</a>
+        
+        {% if reports %}
+            {% for report in reports %}
+            <div class="report-card">
+                <img src="/{{ report.image_path }}" class="report-img" alt="Pollution Report">
+                <div class="report-info">
+                    <p><strong>ผู้ใช้:</strong> {{ report.username }}</p>
+                    <p><strong>วันที่:</strong> {{ report.created_at }}</p>
+                    <p><strong>จำนวนขยะที่ AI ตรวจพบ:</strong> {{ report.trash_count }} ชิ้น</p>
+                    <p><strong>พิกัด:</strong> {{ report.lat }}, {{ report.lng }}</p>
+                    
+                    <div style="background-color: #f1f8e9; padding: 10px; border-radius: 8px; margin-top: 10px; border: 1px solid #c8e6c9; display: inline-block;">
+                        <strong style="color: #2e7d32;">ผลการโหวตจากผู้ใช้:</strong>
+                        <span style="margin-left: 10px; color: #2ecc71;">ผ่าน: {{ vote_data['report'].get(report.id, {}).get('pass', 0) }}</span> | 
+                        <span style="color: #e74c3c;">ไม่ผ่าน: {{ vote_data['report'].get(report.id, {}).get('fail', 0) }}</span>
+                    </div>
+
+                    <div class="report-actions" style="margin-top: 10px;">
+                        <form action="/admin/approve_report/{{ report.id }}" method="POST">
+                            <button type="submit" class="btn-approve">อนุมัติ (+2 คะแนน)</button>
+                        </form>
+                        <form action="/admin/reject_report/{{ report.id }}" method="POST">
+                            <button type="submit" class="btn-reject" onclick="return confirm('แน่ใจหรือไม่ว่าต้องการปฏิเสธรายงานนี้?');">ปฏิเสธ</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-reports">ไม่มีรายงานที่รอการตรวจสอบในขณะนี้</p>
+        {% endif %}
+
+        <h1 class="section-title">รายงานการเคลียร์มลพิษที่รอการตรวจสอบ</h1>
+        
+        {% if cleared_reports %}
+            {% for c_report in cleared_reports %}
+            <div class="report-card">
+                <div class="clear-img-wrapper">
+                    <div>
+                        <p style="font-size:12px;text-align:center;">ก่อนเคลียร์</p>
+                        <img src="/{{ c_report.before_image }}" class="clear-img" alt="Before">
+                    </div>
+                    <div>
+                        <p style="font-size:12px;text-align:center;">หลังเคลียร์</p>
+                        <img src="/{{ c_report.after_image }}" class="clear-img" alt="After">
+                    </div>
+                </div>
+                <div class="report-info">
+                    <p><strong>ผู้ใช้:</strong> {{ c_report.username }}</p>
+                    <p><strong>วันที่:</strong> {{ c_report.created_at }}</p>
+
+                    <div style="background-color: #f1f8e9; padding: 10px; border-radius: 8px; margin-top: 10px; border: 1px solid #c8e6c9; display: inline-block;">
+                        <strong style="color: #2e7d32;">ผลการโหวตจากผู้ใช้:</strong>
+                        <span style="margin-left: 10px; color: #2ecc71;">ผ่าน: {{ vote_data['clear'].get(c_report.id, {}).get('pass', 0) }}</span> | 
+                        <span style="color: #e74c3c;">ไม่ผ่าน: {{ vote_data['clear'].get(c_report.id, {}).get('fail', 0) }}</span>
+                    </div>
+
+                    <div class="report-actions" style="margin-top: 10px;">
+                        <form action="/admin/approve_clear/{{ c_report.id }}" method="POST">
+                            <button type="submit" class="btn-approve">อนุมัติ (+5 คะแนน)</button>
+                        </form>
+                        <form action="/admin/reject_clear/{{ c_report.id }}" method="POST">
+                            <button type="submit" class="btn-reject" onclick="return confirm('แน่ใจหรือไม่ว่าต้องการปฏิเสธการเคลียร์นี้?');">ปฏิเสธ</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-reports">ไม่มีรายงานการเคลียร์ที่รอการตรวจสอบในขณะนี้</p>
+        {% endif %}
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!document.querySelector('.hamburger')) {
+                const nav = document.querySelector('.navbar');
+                const navLinks = document.querySelector('.nav-links');
+                if (nav && navLinks) {
+                    const hamburger = document.createElement('div');
+                    hamburger.className = 'hamburger';
+                    hamburger.innerHTML = '<span></span><span></span><span></span>';
+                    nav.insertBefore(hamburger, navLinks);
+                    
+                    hamburger.addEventListener('click', function() {
+                        hamburger.classList.toggle('active');
+                        navLinks.classList.toggle('active');
+                    });
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

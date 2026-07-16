@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Heart - ข้อมูลคุณภาพน้ำทะเลย้อนหลัง</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #ffffff;
+            padding: 0 24px;
+            height: 60px;
+            border-bottom: 1px solid #e5e5e0;
+            z-index: 2000; 
+        }
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: #346675;
+            text-decoration: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #2c3e50;
+            margin-left: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-links .btn-highlight {
+            background-color: #346675;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+
+        .nav-links .btn-highlight:hover {
+            background-color: #254a55;
+        }
+
+        .nav-links .btn-logout {
+            background-color: #e26d5c;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: background-color 0.2s ease;
+        }
+
+        .nav-links .btn-logout:hover {
+            background-color: #c94f3e;
+        }
+
+        .pdata-layout {
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            background: #FDF9EC;
+            position: relative;
+        }
+        .dashboard-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 900px;
+            width: 100%;
+            margin: 30px auto;
+            padding: 0px 20px 200px 20px;
+            z-index: 10;
+            position: relative;
+            min-height: 100%;
+        }
+        
+        .filter-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .filter-group label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #475569;
+            margin-left: 5px;
+        }
+        .select-box {
+            width: 100%;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 14px;
+            background-color: white;
+            outline: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            cursor: pointer;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            margin-top: 10px;
+        }
+
+        .chart-wrapper {
+            height: 320px;
+        }
+
+        .metrics-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .metrics-section h4.section-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #475569;
+            margin-left: 5px;
+        }
+        .metrics-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: white;
+            padding: 20px 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        }
+        .metric-item {
+            text-align: center;
+        }
+        .metric-item h4 {
+            margin: 0;
+            color: #1e293b;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .metric-item p {
+            margin: 5px 0 0 0;
+            font-size: 26px;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .whale-bg {
+            position: absolute;
+            bottom: 20px;
+            left: -80px;
+            width: 320px;
+            opacity: 0.95;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .btn-action {
+            position: absolute;
+            bottom: 130px;
+            right: 20px;
+            background-color: #0b1d28;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 100;
+            transition: transform 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-action:hover {
+            transform: translateY(-2px);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 400px;
+            max-width: 90%;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .btn-close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #64748b;
+        }
+        .btn-close-modal:hover {
+            color: #e74c3c;
+        }
+
+        @media (max-width: 768px) {
+            .pdata-layout {
+                padding: 10px 10px 100px 10px !important;
+                margin-top: 10px !important;
+            }
+            .filter-container {
+                grid-template-columns: 1fr !important;
+            }
+            .metrics-container {
+                flex-wrap: nowrap !important;
+                padding: 15px 5px !important;
+                gap: 5px !important;
+                justify-content: space-between !important;
+            }
+            .metric-item {
+                width: 24% !important;
+            }
+            .metric-item h4 {
+                font-size: 11px !important;
+            }
+            .metric-item p {
+                font-size: 16px !important;
+            }
+            .content-wrapper {
+                flex-direction: column !important;
+                align-items: center !important;
+                gap: 20px !important;
+            }
+            .search-section {
+                width: 100% !important;
+                margin-bottom: 20px !important;
+            }
+            .chart-section {
+                width: 100% !important;
+            }
+            .chart-card {
+                padding: 15px 5px !important;
+            }
+            .chart-wrapper {
+                height: 200px !important;
+            }
+            .metric-cards {
+                flex-direction: column !important;
+            }
+            .whale-bg {
+                display: none !important;
+            }
+            .btn-action {
+                position: static !important;
+                margin-top: 20px !important;
+                width: 100% !important;
+                text-align: center !important;
+            }
+        }
+    </style>
+    <style>
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            z-index: 2000;
+        }
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background-color: #333;
+            transition: all 0.3s;
+        }
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            .nav-links {
+                display: flex !important;
+                position: fixed;
+                top: 0;
+                right: -250px;
+                width: 250px;
+                height: 100vh;
+                background-color: #ffffff;
+                flex-direction: column !important;
+                padding-top: 70px;
+                padding-left: 20px;
+                padding-right: 20px;
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                transition: right 0.3s ease;
+                z-index: 1500;
+                align-items: flex-start !important;
+                gap: 15px !important;
+                overflow-y: auto;
+            }
+            .nav-links.active {
+                right: 0;
+            }
+            .nav-links a {
+                color: #333 !important;
+                text-shadow: none !important;
+                margin-left: 0 !important;
+                width: 100%;
+                text-align: left;
+                padding: 5px 0;
+            }
+            .nav-links .btn-highlight,
+            .nav-links .btn-logout {
+                color: #ffffff !important;
+                text-align: center;
+                width: 100%;
+                padding: 10px 15px;
+                border-radius: 20px;
+            }
+            .nav-links form {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+            .nav-links form button {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 5px;
+            }
+            .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+            .hamburger.active span:nth-child(2) { opacity: 0; }
+            .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        }
+    </style>
+
+
+
+</head>
+
+<body>
+        
+    <nav class="navbar">
+        <a href="/" class="logo">Blue Heart</a>
+        <div class="nav-links">
+            <a href="/home">หน้าแรก</a>
+            <a href="/pdata" class="active">ข้อมูลย้อนหลัง</a>
+            {% if session.get('username') %}
+                <a href="/pin">ปักหมุดสถานที่</a>
+            {% endif %}
+            
+            <a href="/game" class="btn-highlight">ภารกิจพิทักษ์รักษาทะเล</a>
+            
+            {% if session.get('role') == 'admin' %}
+                <a href="/admin/reports" class="btn-highlight" style="background-color: #f39c12; margin-right: 10px;">ระบบจัดการ (Admin)</a>
+            {% endif %}
+            {% if session.get('username') %}
+                <a href="/logout" class="btn-logout">ออกจากระบบ ({{ session['username'] }})</a>
+            {% else %}
+                <a href="/login" class="btn-highlight">เข้าสู่ระบบ</a>
+            {% endif %}
+
+            {% if session.get('username') %}
+                <form action="/delete_account" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีผู้ใช้นี้? การกระทำนี้ไม่สามารถย้อนกลับได้');" style="display:inline;">
+                    <button type="submit" style="background-color: #ff4d4d; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 500; margin-left: 20px;">
+                        ลบบัญชีของฉัน
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="pdata-layout">
+
+        <div id="contactModal" class="modal-overlay" style="display:none;">
+            <div class="modal-content">
+                <button class="btn-close-modal" onclick="closeContactModal()">×</button>
+                <h3 style="margin-bottom: 15px; color: #1e293b;">📞 หน่วยงานฉุกเฉินและร้องเรียนในพื้นที่</h3>
+                <div id="modalContactOrg" style="font-size: 14px; font-weight: 500; color: #1d4ed8;">-</div>
+                <div id="modalContactPhone" style="font-size: 13px; color: #475569; margin-top: 5px;">โทร: -</div>
+                <div id="modalContactEmail" style="font-size: 13px; color: #475569; margin-top: 5px;">อีเมล: -</div>
+            </div>
+        </div>
+
+        <div class="dashboard-content">
+            
+            <div class="filter-container">
+                <div class="filter-group">
+                    <label>เลือกจังหวัด</label>
+                    <select id="provinceSelect" class="select-box" onchange="onProvinceChange()"></select>
+                </div>
+                <div class="filter-group">
+                    <label>เลือกชายหาด/สถานที่</label>
+                    <select id="placeSelect" class="select-box" onchange="onPlaceChange()"></select>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-wrapper" style="position: relative; width:100%;">
+                    <canvas id="historyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="metrics-section">
+                <h4 class="section-title">คุณภาพน้ำ</h4>
+                <div class="metrics-container">
+                    <div class="metric-item">
+                        <h4>MWQI</h4>
+                        <p id="m-soway">-</p>
+                    </div>
+                    <div class="metric-item">
+                        <h4>DO</h4>
+                        <p id="m-do">-</p>
+                    </div>
+                    <div class="metric-item">
+                        <h4>SS</h4>
+                        <p id="m-tss">-</p>
+                    </div>
+                    <div class="metric-item">
+                        <h4>pH</h4>
+                        <p id="m-ph">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <img src="{{ url_for('static', filename='img/whale_transparent.png') }}" class="whale-bg" alt="Whale">
+            <button class="btn-action" onclick="openContactModal()">ช่องทางการแจ้งหน่วยงานที่เกี่ยวข้อง</button>
+        </div>
+    </div>
+
+    <script>
+        const allBeaches = {{ beaches | tojson }};
+        
+        const dataHierarchy = {};
+
+        allBeaches.forEach(item => {
+            const province = item.province || "ไม่ระบุจังหวัด";
+            const place = item.beach_name || "ไม่ระบุชื่อ";
+
+            if (!dataHierarchy[province]) {
+                dataHierarchy[province] = {};
+            }
+            if (!dataHierarchy[province][place]) {
+                dataHierarchy[province][place] = [];
+            }
+            dataHierarchy[province][place].push(item);
+        });
+
+        const provinceSelect = document.getElementById('provinceSelect');
+        const placeSelect = document.getElementById('placeSelect');
+
+        const sortedProvinces = Object.keys(dataHierarchy).sort();
+        sortedProvinces.forEach(prov => {
+            const opt = document.createElement('option');
+            opt.value = prov;
+            opt.textContent = prov;
+            provinceSelect.appendChild(opt);
+        });
+
+        function onProvinceChange() {
+            const selectedProv = provinceSelect.value;
+            placeSelect.innerHTML = ''; 
+
+            if (dataHierarchy[selectedProv]) {
+                const sortedPlaces = Object.keys(dataHierarchy[selectedProv]).sort();
+                sortedPlaces.forEach(place => {
+                    const opt = document.createElement('option');
+                    opt.value = place;
+                    opt.textContent = place;
+                    placeSelect.appendChild(opt);
+                });
+            }
+            onPlaceChange();
+        }
+
+        const ctx = document.getElementById('historyChart').getContext('2d');
+        const historyChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'MWQI',
+                        data: [],
+                        borderColor: '#2ecc71',
+                        backgroundColor: 'rgba(46, 204, 113, 0.05)',
+                        borderWidth: 2.5,
+                        tension: 0.15,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'ค่า DO',
+                        data: [],
+                        borderColor: '#3498db',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2.5,
+                        tension: 0.15,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'MWQI' },
+                        min: 0, max: 100
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: 'ค่า DO' },
+                        grid: { drawOnChartArea: false }
+                    }
+                }
+            }
+        });
+
+        function onPlaceChange() {
+            const selectedProv = provinceSelect.value;
+            const selectedPlace = placeSelect.value;
+            
+            if (!selectedProv || !selectedPlace) return;
+
+            let records = dataHierarchy[selectedProv][selectedPlace] || [];
+
+            records.sort((a, b) => a.date.localeCompare(b.date));
+
+            const yearlyLatestMap = {};
+            records.forEach(r => {
+                yearlyLatestMap[r.year] = r;
+            });
+
+            const filteredChartData = Object.values(yearlyLatestMap).sort((a, b) => a.year.localeCompare(b.year));
+
+            const labels = filteredChartData.map(r => `ปี ${r.year}`);
+            const sowayData = filteredChartData.map(r => parseFloat(r.mwqi) || null);
+            const doData = filteredChartData.map(r => parseFloat(r.do_val) || null);
+
+            historyChart.data.labels = labels;
+            historyChart.data.datasets[0].data = sowayData;
+            historyChart.data.datasets[1].data = doData;
+            historyChart.update();
+
+            const absoluteLatest = filteredChartData[filteredChartData.length - 1];
+            if (absoluteLatest) {
+                document.getElementById('m-soway').textContent = absoluteLatest.mwqi || '-';
+                document.getElementById('m-do').textContent = absoluteLatest.do_val || '-';
+                document.getElementById('m-tss').textContent = absoluteLatest.tss || '-'; 
+                document.getElementById('m-ph').textContent = absoluteLatest.ph || '-'; 
+                
+                const pinColor = absoluteLatest.color || '#334155';
+                document.getElementById('m-soway').style.color = pinColor;
+                document.getElementById('m-do').style.color = pinColor;
+                document.getElementById('m-tss').style.color = pinColor;
+                document.getElementById('m-ph').style.color = pinColor;
+            }
+        }
+
+        if (sortedProvinces.length > 0) {
+            onProvinceChange();
+        }
+
+        var provinceContacts = {
+            "ระยอง": { org: "ทสจ.ระยอง (ศาลากลางจังหวัด)", phone: "038-694-007", email: "rayong.org@mnre.go.th" },
+            "ชลบุรี": { org: "ทสจ.ชลบุรี (ฝ่ายสิ่งแวดล้อม)", phone: "038-276-173", email: "chonburi.org@mnre.go.th" },
+            "ภูเก็ต": { org: "ทสจ.ภูเก็ต (ควบคุมมลพิษทะเล)", phone: "076-211-496", email: "phuket.org@mnre.go.th" }
+        };
+
+        function openContactModal() {
+            const selectedProv = provinceSelect.value;
+            const contact = provinceContacts[selectedProv] || { org: "ยังไม่มีข้อมูลหน่วยงานสำหรับจังหวัดนี้", phone: "-", email: "-" };
+            
+            document.getElementById('modalContactOrg').textContent = contact.org;
+            document.getElementById('modalContactPhone').textContent = "โทร: " + contact.phone;
+            document.getElementById('modalContactEmail').textContent = "อีเมล: " + contact.email;
+            
+            document.getElementById('contactModal').style.display = 'flex';
+        }
+
+        function closeContactModal() {
+            document.getElementById('contactModal').style.display = 'none';
+        }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!document.querySelector('.hamburger')) {
+                const nav = document.querySelector('.navbar');
+                const navLinks = document.querySelector('.nav-links');
+                if (nav && navLinks) {
+                    const hamburger = document.createElement('div');
+                    hamburger.className = 'hamburger';
+                    hamburger.innerHTML = '<span></span><span></span><span></span>';
+                    nav.insertBefore(hamburger, navLinks);
+                    
+                    hamburger.addEventListener('click', function() {
+                        hamburger.classList.toggle('active');
+                        navLinks.classList.toggle('active');
+                    });
+                }
+            }
+        });
+    </script>
+
+</body>
+
+</html>

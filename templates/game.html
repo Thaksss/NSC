@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Heart - ภารกิจ</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+    <style>
+        /* Mobile Navbar */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            z-index: 2000;
+        }
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background-color: #333;
+            transition: all 0.3s;
+        }
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            .nav-links {
+                display: flex !important;
+                position: fixed;
+                top: 0;
+                right: -250px;
+                width: 250px;
+                height: 100vh;
+                background-color: #ffffff;
+                flex-direction: column !important;
+                padding-top: 70px;
+                padding-left: 20px;
+                padding-right: 20px;
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                transition: right 0.3s ease;
+                z-index: 1500;
+                align-items: flex-start !important;
+                gap: 15px !important;
+                overflow-y: auto;
+            }
+            .nav-links.active {
+                right: 0;
+            }
+            .nav-links a {
+                color: #333 !important;
+                text-shadow: none !important;
+                margin-left: 0 !important;
+                width: 100%;
+                text-align: left;
+                padding: 5px 0;
+            }
+            .nav-links .btn-highlight,
+            .nav-links .btn-logout {
+                color: #ffffff !important;
+                text-align: center;
+                width: 100%;
+                padding: 10px 15px;
+                border-radius: 20px;
+            }
+            .nav-links form {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+            .nav-links form button {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 5px;
+            }
+            /* Hamburger animation */
+            .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+            .hamburger.active span:nth-child(2) { opacity: 0; }
+            .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        }
+    </style>
+
+
+
+</head>
+
+<body>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        body,
+        html {
+            height: 100%;
+            width: 100%;
+            background-color: #0b1d28;
+            overflow: hidden;
+        }
+
+        .hero {
+            height: 100vh;
+            width: 100%;
+            position: relative;
+            background-image: url('https://scontent.fbkk9-3.fna.fbcdn.net/v/t1.15752-9/735429808_1577004827317497_7159849657123700813_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1365&ctp=s2048x1365&_nc_cat=106&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeEX6RPm6YS17r8PXy9ubBH-ZGS_V_6bHUdkZL9X_psdR8hK2k_fVfZd4FG_zH4Fv-FwaA511z6OwP0x7QtkIVmV&_nc_ohc=GaYdKsOtnKoQ7kNvwEpTid_&_nc_oc=AdpB2AsnRaqTfONrmEyef6RtnFTCU4ch39GTP3w_qVH_7eDtvL2QCzQ6Icx7uwpxd81KHtTEkgyERlqSpWvPnuLb&_nc_zt=23&_nc_ht=scontent.fbkk9-3.fna&_nc_ss=7b2a8&oh=03_Q7cD5wFvF2v10NQDZ6WjlJmuAkneu_zqIWLe1u0JP1r1qN5fWA&oe=6A71AC0B');
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: cover;
+        }
+
+        .navbar {
+            background-color: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .navbar .logo {
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .navbar .nav-links a {
+            color: rgba(255, 255, 255, 0.85);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: color 0.2s ease;
+        }
+
+        .navbar .nav-links a:hover {
+            color: #ffffff;
+        }
+
+        .navbar .nav-links .btn-highlight {
+            background-color: rgba(0, 119, 204, 0.8);
+            border: 1px solid rgba(0, 119, 204, 0.9);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            color: #ffffff;
+            text-shadow: none;
+            transition: all 0.2s ease;
+        }
+
+        .navbar .nav-links .btn-highlight:hover {
+            background-color: #0077cc;
+            border-color: #0077cc;
+            box-shadow: 0 0 12px rgba(0, 119, 204, 0.6);
+        }
+
+        .navbar .nav-links .btn-logout {
+            background-color: rgba(226, 109, 92, 0.8);
+            border: 1px solid rgba(226, 109, 92, 0.5);
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-shadow: none;
+            transition: all 0.2s ease;
+        }
+
+        .navbar .nav-links .btn-logout:hover {
+            background-color: #e26d5c;
+            border-color: #e26d5c;
+        }
+
+        .navbar .nav-links form {
+            margin-left: 20px;
+        }
+
+        .content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            width: 95%;
+            max-width: 1200px;
+            z-index: 10;
+        }
+
+        .content h1 {
+            font-size: 4.8rem;
+            font-weight: 700;
+            margin-bottom: 50px;
+            letter-spacing: -1px;
+            text-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+        }
+
+        .mission-menu {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .mission-menu a {
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 1.35rem;
+            font-weight: 600;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .mission-menu a:hover {
+            opacity: 0.8;
+        }
+
+        .mission-menu .btn-start {
+            background-color: #ffffff;
+            color: #000000;
+            padding: 8px 32px;
+            border-radius: 14px;
+            font-weight: 700;
+            text-shadow: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .mission-menu .btn-start:hover {
+            background-color: #f2f2f2;
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .content h1 {
+                font-size: clamp(2.2rem, 8.5vw, 3rem);
+                white-space: nowrap;
+                margin-bottom: 60px;
+            }
+            .mission-menu {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .mission-menu a {
+                width: 170px;
+                background-color: rgba(0, 0, 0, 0.3);
+                padding: 10px 0;
+                border-radius: 12px;
+                text-align: center;
+                backdrop-filter: blur(5px);
+                font-size: 1.15rem;
+            }
+            .mission-menu .btn-start {
+                background-color: #ffffff;
+                color: #000000;
+                width: 190px;
+                padding: 12px 0;
+                font-size: 1.25rem;
+            }
+            .btn-start { order: 1; }
+            #openMission { order: 2; }
+            #openQuest { order: 3; }
+            #openLeaderboard { order: 4; }
+            
+            .modal-box {
+                width: 95%;
+                padding: 30px 20px;
+                border-radius: 20px;
+            }
+            .modal-title {
+                font-size: 1.6rem;
+                margin-bottom: 20px;
+            }
+            .close-btn {
+                top: 15px;
+                right: 20px;
+                font-size: 2rem;
+            }
+            .modal-steps {
+                margin-bottom: 20px;
+            }
+            .modal-steps li {
+                font-size: 1rem;
+                margin-bottom: 10px;
+            }
+            .modal-steps li::before {
+                font-size: 1.5rem;
+                margin-right: 10px;
+            }
+            .quest-list {
+                margin-bottom: 20px;
+            }
+            .quest-item, .leaderboard-item {
+                font-size: 0.85rem;
+                padding: 10px 15px;
+            }
+            .btn-modal-action {
+                font-size: 0.95rem;
+                padding: 6px 20px;
+            }
+            .modal-footer-text {
+                font-size: 0.85rem;
+                margin-bottom: 15px;
+            }
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            width: 85%;
+            max-width: 850px;
+            padding: 50px 60px;
+            border-radius: 30px;
+            position: relative;
+            color: #ffffff;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 35px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 25px;
+            right: 30px;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 2.5rem;
+            font-weight: 300;
+            cursor: pointer;
+            line-height: 1;
+            opacity: 0.85;
+        }
+
+        .close-btn:hover {
+            opacity: 1;
+        }
+
+        .btn-modal-action {
+            background-color: #3f7b88;
+            color: #ffffff;
+            border: none;
+            padding: 8px 35px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: background 0.2s;
+        }
+
+        .btn-modal-action:hover {
+            background-color: #33646f;
+        }
+
+        .modal-steps {
+            list-style: none;
+            text-align: left;
+            display: inline-block;
+            margin-bottom: 40px;
+        }
+
+        .modal-steps li {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 18px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+        }
+
+        .modal-steps li::before {
+            content: "•";
+            color: #ffffff;
+            font-size: 2.5rem;
+            margin-right: 15px;
+            line-height: 0;
+        }
+
+        .modal-footer-text {
+            font-size: 1.1rem;
+            font-weight: 400;
+            opacity: 0.9;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 25px;
+        }
+
+        .quest-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 35px;
+            width: 100%;
+        }
+
+        .quest-item {
+            background: rgba(255, 255, 255, 0.18);
+            padding: 16px 35px;
+            border-radius: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.25rem;
+            font-weight: 500;
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .quest-desc {
+            flex: 2;
+            text-align: left;
+        }
+
+        .quest-reward {
+            flex: 1;
+            text-align: center;
+        }
+
+        .quest-status {
+            flex: 1;
+            text-align: right;
+            font-weight: 500;
+            opacity: 0.95;
+        }
+
+        .leaderboard-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 25px;
+            width: 100%;
+            max-height: 350px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .leaderboard-item {
+            background: rgba(255, 255, 255, 0.18);
+            padding: 12px 25px;
+            border-radius: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.15rem;
+            font-weight: 500;
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .lb-rank {
+            width: 40px;
+            text-align: center;
+            font-weight: 700;
+            color: #f1c40f;
+        }
+        
+        .lb-name {
+            flex: 2;
+            text-align: left;
+            margin-left: 10px;
+        }
+        
+        .lb-score {
+            flex: 1;
+            text-align: right;
+            font-weight: 600;
+            color: #2ecc71;
+        }
+
+        @media (max-width: 768px) {
+            .modal-box {
+                width: 95% !important;
+                padding: 30px 15px !important;
+                border-radius: 20px !important;
+            }
+            .modal-title {
+                font-size: 1.5rem !important;
+                margin-bottom: 20px !important;
+                white-space: nowrap !important;
+            }
+            .close-btn {
+                top: 10px !important;
+                right: 15px !important;
+                font-size: 1.8rem !important;
+            }
+            .modal-steps {
+                margin-bottom: 15px !important;
+            }
+            .modal-steps li {
+                font-size: 1rem !important;
+                margin-bottom: 10px !important;
+            }
+            .modal-steps li::before {
+                font-size: 1.2rem !important;
+                margin-right: 8px !important;
+            }
+            .quest-list {
+                margin-bottom: 15px !important;
+                gap: 10px !important;
+            }
+            .quest-item, .leaderboard-item {
+                font-size: 0.85rem !important;
+                padding: 10px 15px !important;
+                border-radius: 20px !important;
+            }
+            .btn-modal-action {
+                font-size: 0.95rem !important;
+                padding: 8px 20px !important;
+            }
+            .modal-footer-text {
+                font-size: 0.85rem !important;
+                margin-bottom: 15px !important;
+            }
+        }
+    </style>
+
+    <div class="hero">
+        <nav class="navbar">
+            <a href="/" class="logo">Blue Heart</a>
+            <div class="nav-links">
+                <a href="/home">หน้าแรก</a>
+                <a href="/pdata">ข้อมูลย้อนหลัง</a>
+                {% if session.get('username') %}
+                <a href="/pin">ปักหมุดสถานที่</a>
+                {% endif %}
+
+                <a href="/game" class="btn-highlight">ภารกิจพิทักษ์รักษาทะเล</a>
+
+                {% if session.get('role') == 'admin' %}
+                <a href="/admin/reports" class="btn-highlight" style="background-color: #f39c12; margin-right: 10px;">ระบบจัดการ (Admin)</a>
+            {% endif %}
+            {% if session.get('username') %}
+                <a href="/logout" class="btn-logout">ออกจากระบบ ({{ session['username'] }})</a>
+                {% else %}
+                <a href="/login" class="btn-highlight">เข้าสู่ระบบ</a>
+                {% endif %}
+
+                {% if session.get('username') %}
+                <form action="/delete_account" method="POST"
+                    onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีผู้ใช้นี้? การกระทำนี้ไม่สามารถย้อนกลับได้');"
+                    style="display:inline;">
+                    <button type="submit"
+                        style="background-color: #ff4d4d; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 500;">
+                        ลบบัญชีของฉัน
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </nav>
+
+        <div class="content">
+            <h1>ยินดีต้อนรับสู่ภารกิจ</h1>
+            <div class="mission-menu">
+                <a id="openMission">วิธีทำภารกิจ</a>
+                <a href="/ingame" class="btn-start">เริ่มทำภารกิจ</a>
+                <a id="openQuest">เควสรายวัน</a>
+                <a id="openLeaderboard">ตารางอันดับ</a>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="missionModal">
+            <div class="modal-box">
+                <button class="close-btn" id="closeMission">&times;</button>
+                <h2 class="modal-title">วิธีทำภารกิจ</h2>
+                <ul class="modal-steps">
+                    <li>เปิด GPS และอยู่ในพื้นที่ชายหาด</li>
+                    <li>ถ่ายรูปรายงาน หรือยืนยันมลพิษ</li>
+                    <li>กดส่งภารกิจ</li>
+                </ul>
+                <p class="modal-footer-text">ทำภารกิจให้บ่อย เพื่อรับแต้มคะแนนที่เยอะขึ้น</p>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="questModal">
+            <div class="modal-box">
+                <button class="close-btn" id="closeQuest">&times;</button>
+                <h2 class="modal-title">เควสรายวัน</h2>
+
+                <div class="quest-list">
+                    <div class="quest-item">
+                        <div class="quest-desc">รายงานจุดที่มีขยะ 20 ชิ้นขึ้นไป</div>
+                        <div class="quest-reward">20 แต้ม</div>
+                        <div class="quest-status">ยังไม่สำเร็จ</div>
+                    </div>
+                    <div class="quest-item">
+                        <div class="quest-desc">ยืนชี้ให้ครบ 3 คน</div>
+                        <div class="quest-reward">20 แต้ม</div>
+                        <div class="quest-status">ยังไม่สำเร็จ</div>
+                    </div>
+                    <div class="quest-item">
+                        <div class="quest-desc">เคลียร์ขยะ 2 ครั้ง</div>
+                        <div class="quest-reward">20 แต้ม</div>
+                        <div class="quest-status">สำเร็จ</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="leaderboardModal">
+            <div class="modal-box">
+                <button class="close-btn" id="closeLeaderboard">&times;</button>
+                <h2 class="modal-title">ตารางอันดับ (Top 10)</h2>
+
+                <div class="leaderboard-list">
+                    {% for user in leaderboard %}
+                    <div class="leaderboard-item">
+                        <div class="lb-rank">#{{ loop.index }}</div>
+                        <div class="lb-name">{{ user.username }} ({{ user.rank }})</div>
+                        <div class="lb-score">{{ user.score }} แต้ม</div>
+                    </div>
+                    {% else %}
+                    <div class="leaderboard-item" style="justify-content: center;">
+                        ยังไม่มีข้อมูลในตารางอันดับ
+                    </div>
+                    {% endfor %}
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const openMission = document.getElementById('openMission');
+        const closeMission = document.getElementById('closeMission');
+        const missionModal = document.getElementById('missionModal');
+
+        openMission.addEventListener('click', () => missionModal.classList.add('active'));
+        closeMission.addEventListener('click', () => missionModal.classList.remove('active'));
+
+        const openQuest = document.getElementById('openQuest');
+        const closeQuest = document.getElementById('closeQuest');
+        const questModal = document.getElementById('questModal');
+
+        openQuest.addEventListener('click', () => questModal.classList.add('active'));
+        closeQuest.addEventListener('click', () => questModal.classList.remove('active'));
+
+        const openLeaderboard = document.getElementById('openLeaderboard');
+        const closeLeaderboard = document.getElementById('closeLeaderboard');
+        const closeLeaderboardAction = document.getElementById('closeLeaderboardAction');
+        const leaderboardModal = document.getElementById('leaderboardModal');
+
+        openLeaderboard.addEventListener('click', () => leaderboardModal.classList.add('active'));
+        closeLeaderboard.addEventListener('click', () => leaderboardModal.classList.remove('active'));
+        closeLeaderboardAction.addEventListener('click', () => leaderboardModal.classList.remove('active'));
+
+        window.addEventListener('click', (e) => {
+            if (e.target === missionModal) missionModal.classList.remove('active');
+            if (e.target === questModal) questModal.classList.remove('active');
+            if (e.target === leaderboardModal) leaderboardModal.classList.remove('active');
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!document.querySelector('.hamburger')) {
+                const nav = document.querySelector('.navbar');
+                const navLinks = document.querySelector('.nav-links');
+                if (nav && navLinks) {
+                    const hamburger = document.createElement('div');
+                    hamburger.className = 'hamburger';
+                    hamburger.innerHTML = '<span></span><span></span><span></span>';
+                    nav.insertBefore(hamburger, navLinks);
+                    
+                    hamburger.addEventListener('click', function() {
+                        hamburger.classList.toggle('active');
+                        navLinks.classList.toggle('active');
+                    });
+                }
+            }
+        });
+    </script>
+
+</body>
+
+</html>
