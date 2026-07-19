@@ -709,29 +709,34 @@ def detect_trash():
     npimg = np.frombuffer(file, np.uint8)
     img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
     
-    results = model(img, conf=0.15)
-    
-    trash_count = 0
-    detected_items = []
-    
-    all_detected = []
-    
-    for box in results[0].boxes:
-        class_id = int(box.cls[0])
-        label = model.names[class_id]
-        all_detected.append(label)
+    try:
+        results = model(img, conf=0.15)
         
-        if class_id in WASTE_CLASSES:
-            trash_count += 1
-            detected_items.append(label)
+        trash_count = 0
+        detected_items = []
+        all_detected = []
+        
+        for box in results[0].boxes:
+            class_id = int(box.cls[0])
+            label = model.names[class_id]
+            all_detected.append(label)
             
-    print(f"ตรวจพบทั้งหมด: {all_detected}, เป็นขยะ: {detected_items}")
-            
-    return jsonify({
-        "success": True,
-        "total_pieces": trash_count,
-        "items": detected_items
-    })
+            if class_id in WASTE_CLASSES:
+                trash_count += 1
+                detected_items.append(label)
+                
+        print(f"ตรวจพบทั้งหมด: {all_detected}, เป็นขยะ: {detected_items}")
+                
+        return jsonify({
+            "success": True,
+            "total_pieces": trash_count,
+            "items": detected_items
+        })
+    except Exception as e:
+        import traceback
+        print(f"Detect Trash Error: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route('/submit_pollution_report', methods=['POST'])
 def submit_pollution_report():

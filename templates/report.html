@@ -410,7 +410,7 @@ async function submitReport() {
         const aiResult = await aiResponse.json();
 
         if (!aiResponse.ok || !aiResult.success) {
-            throw new Error('AI Error');
+            throw new Error(aiResult.message || 'AI Error');
         }
 
         const trashCount = aiResult.total_pieces;
@@ -451,7 +451,7 @@ async function submitReport() {
     } catch (err) {
         console.error(err);
         loadingOverlay.style.display = 'none';
-        alert('เกิดข้อผิดพลาดในการตรวจสอบ กรุณาลองใหม่อีกครั้ง');
+        alert('เกิดข้อผิดพลาด: ' + err.message);
     }
 }
 </script>
