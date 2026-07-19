@@ -363,9 +363,25 @@ function handleCameraClick() {
     }
 
     if (!isCaptured) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0);
+        const MAX_SIZE = 640;
+        let width = video.videoWidth;
+        let height = video.videoHeight;
+
+        if (width > height) {
+            if (width > MAX_SIZE) {
+                height *= MAX_SIZE / width;
+                width = MAX_SIZE;
+            }
+        } else {
+            if (height > MAX_SIZE) {
+                width *= MAX_SIZE / height;
+                height = MAX_SIZE;
+            }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(video, 0, 0, width, height);
 
         img.src = canvas.toDataURL('image/jpeg', 0.8);
         img.style.display = 'block';
