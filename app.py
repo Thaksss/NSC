@@ -26,6 +26,11 @@ WASTE_CLASSES = list(range(12))
 API_KEY = "Q3nfoFvugIUYEKKBcQnlEI23XmMtlPaL"
 RESOURCE_ID = "89faffe4-5d67-4443-bfe2-999538ddc670" 
 
+import time
+WATER_QUALITY_CACHE = None
+LAST_CACHE_TIME = 0
+CACHE_DURATION_SECONDS = 3600 * 24 # 1 day
+
 def get_db_connection():
     conn = sqlite3.connect('database.db')
     conn.row_factory = sqlite3.Row
@@ -130,36 +135,23 @@ def init_db():
 init_db()
 
 def get_water_quality_records():
-    headers = {"api-key": API_KEY}
-    search_url = "https://data.go.th/api/3/action/datastore_search"
+    global WATER_QUALITY_CACHE, LAST_CACHE_TIME
     
-    params = {
-        "resource_id": RESOURCE_ID,
-        "limit": 5000  
-    }
-    
-    records = None
-    try:
-        # Set a 5-second timeout. If data.go.th blocks the request (e.g. from Render's SG IP), it will fail quickly and use cache.
-        response = requests.get(search_url, headers=headers, params=params, timeout=5)
-        res_data = response.json()
-        if res_data.get('success'):
-            records = res_data['result']['records']
-    except Exception as e:
-        print(f"เกิดข้อผิดพลาดในการดึงข้อมูลจาก API: {e}")
+    if WATER_QUALITY_CACHE is not None and (time.time() - LAST_CACHE_TIME < CACHE_DURATION_SECONDS):
+        return WATER_QUALITY_CACHE
         
-    # Fallback to local cached data if API fails
-    if not records:
-        print("กำลังโหลดข้อมูลจากไฟล์สำรอง (cached_water_data.json)...")
-        cache_path = os.path.join(os.path.dirname(__file__), 'cached_water_data.json')
-        if os.path.exists(cache_path):
-            try:
-                import json
-                with open(cache_path, 'r', encoding='utf-8') as f:
-                    records = json.load(f)
-                print(f"โหลดข้อมูลจากไฟล์สำรองสำเร็จ ({len(records)} รายการ)")
-            except Exception as cache_err:
-                print(f"ไม่สามารถโหลดข้อมูลจากไฟล์สำรองได้: {cache_err}")
+    records = None
+    cache_path = os.path.join(os.path.dirname(__file__), 'cached_water_data.json')
+    if os.path.exists(cache_path):
+        try:
+            import json
+            with open(cache_path, 'r', encoding='utf-8') as f:
+                records = json.load(f)
+            print(f"โหลดข้อมูลจากไฟล์สำรอง (Sync Data) สำเร็จ ({len(records)} รายการ)")
+        except Exception as cache_err:
+            print(f"ไม่สามารถโหลดข้อมูลจากไฟล์สำรองได้: {cache_err}")
+    else:
+        print("ไม่พบไฟล์ข้อมูลคุณภาพน้ำ กรุณารัน sync_data.py ก่อน")
                 
     if not records:
         return []
@@ -201,6 +193,8 @@ def get_water_quality_records():
             }
             formatted_beaches.append(beach_info)
             
+    WATER_QUALITY_CACHE = formatted_beaches
+    LAST_CACHE_TIME = time.time()
     return formatted_beaches
 
 @app.route('/')
@@ -410,28 +404,41 @@ def submit_clear_report():
 
 def send_otp_email(to_email, otp):
     EMAIL_ADDRESS = "heartblue172@gmail.com" 
-    EMAIL_PASSWORD = "mwxy busf aylq rrwx"
+    MAILJET_API_KEY = "7f87768e78b86fd2d3eec322d638e451"
+    MAILJET_API_SECRET = "156defb98f10d5cbda36b9c2df7b3670"
     
     print(f"\n--- [SYSTEM] OTP for {to_email} is: {otp} ---\n")
     
+    url = "https://api.mailjet.com/v3.1/send"
+    data = {
+        "Messages": [
+            {
+                "From": {
+                    "Email": EMAIL_ADDRESS,
+                    "Name": "Blue Heart"
+                },
+                "To": [
+                    {
+                        "Email": to_email
+                    }
+                ],
+                "Subject": "รหัสยืนยัน OTP สำหรับการสมัครสมาชิก/กู้คืนรหัสผ่าน",
+                "TextPart": f"รหัสยืนยัน OTP ของคุณคือ: {otp}\nรหัสนี้จะหมดอายุภายใน 5 นาที",
+                "HTMLPart": f"<h3>รหัสยืนยัน OTP ของคุณคือ: <strong>{otp}</strong></h3><br/>รหัสนี้จะหมดอายุภายใน 5 นาที"
+            }
+        ]
+    }
+    
     try:
-        msg = MIMEMultipart()
-        msg['From'] = EMAIL_ADDRESS
-        msg['To'] = to_email
-        msg['Subject'] = "รหัสยืนยัน (OTP) สำหรับตั้งรหัสผ่านใหม่"
-        
-        body = f"รหัสยืนยันของคุณคือ: {otp}\nกรุณานำรหัสนี้ไปกรอกในหน้าเว็บไซต์เพื่อตั้งรหัสผ่านใหม่"
-        msg.attach(MIMEText(body, 'plain'))
-        
-        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=5)
-        server.starttls()
-        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-        text = msg.as_string()
-        server.sendmail(EMAIL_ADDRESS, to_email, text)
-        server.quit()
-        return True
+        response = requests.post(url, auth=(MAILJET_API_KEY, MAILJET_API_SECRET), json=data, timeout=10)
+        if response.status_code == 200:
+            print("Email sent successfully via Mailjet!")
+            return True
+        else:
+            print(f"Failed to send email via Mailjet: {response.status_code} {response.text}")
+            return False
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        print(f"Failed to send email via Mailjet request: {e}")
         return False
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
@@ -527,7 +534,7 @@ def register():
             return render_template('register.html', error="รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษรและต้องมีตัวอักษรภาษาอังกฤษ")
             
         try:
-            validate_email(email, check_deliverability=True)
+            validate_email(email, check_deliverability=False)
         except EmailNotValidError as e:
             return render_template('register.html', error="อีเมลนี้ไม่มีอยู่จริง หรือรูปแบบไม่ถูกต้อง")
         
