@@ -6,5 +6,4 @@ flask-cors
 ultralytics
 email-validator
 gunicorn
-onnx
-onnxruntime
+
