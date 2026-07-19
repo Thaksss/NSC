@@ -19,7 +19,7 @@ from email_validator import validate_email, EmailNotValidError
 
 app = Flask(__name__)
 app.secret_key = 'blueheart_secret_key_encryption'
-model = YOLO("yolov8_trash.onnx") 
+model = YOLO("yolov8_trash.onnx", task="detect") 
 
 WASTE_CLASSES = list(range(12))
 
