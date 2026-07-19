@@ -16,9 +16,12 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email_validator import validate_email, EmailNotValidError
-
 app = Flask(__name__)
 app.secret_key = 'blueheart_secret_key_encryption'
+
+import torch
+torch.set_num_threads(1)
+
 model = YOLO("yolov8_trash.pt") 
 
 WASTE_CLASSES = list(range(12))
