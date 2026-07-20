@@ -22,7 +22,7 @@ app.secret_key = 'blueheart_secret_key_encryption'
 import torch
 torch.set_num_threads(1)
 
-model = YOLO("yolov8_trash.pt") 
+model = YOLO("yolov8_trash_int8.onnx", task="detect") 
 
 WASTE_CLASSES = list(range(12))
 
