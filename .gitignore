@@ -3,4 +3,4 @@
 datasets/
 hf_space/
 __pycache__/
-*.db
+
