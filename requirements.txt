@@ -1,9 +1,8 @@
 Flask>=2.0.0
 requests
-opencv-python-headless
-numpy
 flask-cors
-ultralytics
 email-validator
 gunicorn
-
+psycopg2-binary
+google-generativeai
+pillow

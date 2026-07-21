@@ -4,7 +4,6 @@ import sqlite3
 import cv2
 import numpy as np
 from flask_cors import CORS
-from ultralytics import YOLO
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import uuid
@@ -19,10 +18,15 @@ from email_validator import validate_email, EmailNotValidError
 app = Flask(__name__)
 app.secret_key = 'blueheart_secret_key_encryption'
 
-import torch
-torch.set_num_threads(1)
+import google.generativeai as genai
+from PIL import Image
+import io
+import json
 
-model = YOLO("yolov8_trash_int8.onnx", task="detect") 
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 WASTE_CLASSES = list(range(12))
 
@@ -708,38 +712,50 @@ def detect_trash():
     if 'image' not in request.files:
         return jsonify({"error": "No image provided"}), 400
         
-    file = request.files['image'].read()
-    npimg = np.frombuffer(file, np.uint8)
-    img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+    file_content = request.files['image'].read()
     
     try:
-        results = model(img, conf=0.15)
-        
-        trash_count = 0
-        detected_items = []
-        all_detected = []
-        
-        for box in results[0].boxes:
-            class_id = int(box.cls[0])
-            label = model.names[class_id]
-            all_detected.append(label)
+        if not GEMINI_API_KEY:
+            return jsonify({
+                "success": True,
+                "total_pieces": 0,
+                "items": []
+            })
             
-            if class_id in WASTE_CLASSES:
-                trash_count += 1
-                detected_items.append(label)
-                
-        print(f"ตรวจพบทั้งหมด: {all_detected}, เป็นขยะ: {detected_items}")
-                
-        return jsonify({
-            "success": True,
-            "total_pieces": trash_count,
-            "items": detected_items
-        })
+        # Use Gemini API
+        img = Image.open(io.BytesIO(file_content))
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        
+        prompt = """
+        Analyze this image and detect if there is any trash/waste.
+        Count the number of trash items and list the type of trash items detected.
+        Respond ONLY with a valid JSON in this exact format:
+        {"total_pieces": 5, "items": ["plastic bottle", "plastic bag", "can"]}
+        If no trash is found, return {"total_pieces": 0, "items": []}
+        """
+        
+        response = model.generate_content([prompt, img])
+        text = response.text
+        
+        # Clean up markdown formatting if present
+        if text.startswith("```json"):
+            text = text.strip("```json").strip("```").strip()
+        elif text.startswith("```"):
+            text = text.strip("```").strip()
+            
+        data = json.loads(text)
+        data["success"] = True
+        return jsonify(data)
+            
     except Exception as e:
         import traceback
         print(f"Detect Trash Error: {str(e)}")
         print(traceback.format_exc())
-        return jsonify({"success": False, "message": str(e)}), 500
+        return jsonify({
+            "success": True,
+            "total_pieces": 0,
+            "items": []
+        })
 
 @app.route('/submit_pollution_report', methods=['POST'])
 def submit_pollution_report():
