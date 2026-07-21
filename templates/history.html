@@ -343,7 +343,7 @@
                     {% for item in reports %}
                     <div class="history-card">
                         <div class="history-img-wrapper">
-                            <img src="/{{ item.image_path }}" alt="Report Image">
+                            <img src="{{ get_image_url(item.image_path) }}" alt="Report Image">
                         </div>
                         <div class="history-info">
                             <div class="info-title">รายงานการพบขยะ</div>
@@ -373,8 +373,8 @@
                     {% for item in clears %}
                     <div class="history-card">
                         <div class="history-img-wrapper double">
-                            <img src="/{{ item.before_image }}" alt="Before">
-                            <img src="/{{ item.after_image }}" alt="After">
+                            <img src="{{ get_image_url(item.before_image) }}" alt="Before">
+                            <img src="{{ get_image_url(item.after_image) }}" alt="After">
                         </div>
                         <div class="history-info">
                             <div class="info-title">เคลียร์ขยะพื้นที่มลพิษ</div>
@@ -403,12 +403,12 @@
                     <div class="history-card">
                         {% if item.target_type == 'report' %}
                             <div class="history-img-wrapper">
-                                <img src="/{{ item.report_img }}" alt="Report">
+                                <img src="{{ get_image_url(item.report_img) }}" alt="Report">
                             </div>
                         {% else %}
                             <div class="history-img-wrapper double">
-                                <img src="/{{ item.clear_before }}" alt="Before">
-                                <img src="/{{ item.clear_after }}" alt="After">
+                                <img src="{{ get_image_url(item.clear_before) }}" alt="Before">
+                                <img src="{{ get_image_url(item.clear_after) }}" alt="After">
                             </div>
                         {% endif %}
                         

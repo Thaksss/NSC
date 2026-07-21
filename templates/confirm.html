@@ -385,12 +385,15 @@
                     popupContent += `<b>ผู้ดำเนินการ:</b> ${item.username}<br>`;
                     
                     if (currentFilter === 'report') {
-                        popupContent += `<img src="/${item.image_path}" width="180" style="margin-top:10px; border-radius:8px; object-fit: cover;"><br>`;
+                        let imgSrc = item.image_path.startsWith("data:") ? item.image_path : "/" + item.image_path;
+                        popupContent += `<img src="${imgSrc}" width="180" style="margin-top:10px; border-radius:8px; object-fit: cover;"><br>`;
                     } else {
+                        let beforeSrc = item.before_image.startsWith("data:") ? item.before_image : "/" + item.before_image;
+                        let afterSrc = item.after_image.startsWith("data:") ? item.after_image : "/" + item.after_image;
                         popupContent += `
                         <div class="clear-img-wrapper">
-                            <div><p style="font-size:12px;">ก่อน</p><img src="/${item.before_image}"></div>
-                            <div><p style="font-size:12px;">หลัง</p><img src="/${item.after_image}"></div>
+                            <div><p style="font-size:12px;">ก่อน</p><img src="${beforeSrc}"></div>
+                            <div><p style="font-size:12px;">หลัง</p><img src="${afterSrc}"></div>
                         </div>`;
                     }
                     

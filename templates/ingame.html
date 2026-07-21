@@ -427,7 +427,7 @@
                 <div class="user-card">
                     <div class="user-icon" onclick="openProfileModal()" title="คลิกเพื่อแก้ไขโปรไฟล์">
                         {% if profile_image and profile_image != 'default_profile.png' %}
-                            <img src="{{ url_for('static', filename='uploads/profiles/' + profile_image) }}" style="width:100%; height:100%; object-fit:cover;">
+                            <img src="{{ get_profile_url(profile_image) }}" style="width:100%; height:100%; object-fit:cover;">
                         {% else %}
                             <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                         {% endif %}

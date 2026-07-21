@@ -20,6 +20,7 @@ app.secret_key = 'blueheart_secret_key_encryption'
 
 import io
 import json
+import base64
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
@@ -413,6 +414,24 @@ def get_water_quality_records():
         
     return final_beaches
 
+@app.context_processor
+def utility_processor():
+    def get_image_url(path):
+        if not path:
+            return ""
+        if path.startswith("data:") or path.startswith("http"):
+            return path
+        return "/" + path if not path.startswith("/") else path
+        
+    def get_profile_url(path):
+        if not path or path == "default_profile.png":
+            return url_for('static', filename='uploads/profiles/default_profile.png')
+        if path.startswith("data:") or path.startswith("http"):
+            return path
+        return url_for('static', filename='uploads/profiles/' + path)
+        
+    return dict(get_image_url=get_image_url, get_profile_url=get_profile_url)
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -609,32 +628,17 @@ def submit_clear_report():
     if not all([report_id, before_base64, after_base64]):
         return jsonify({"success": False, "message": "ข้อมูลไม่ครบถ้วน"}), 400
         
-    upload_dir = os.path.join(app.root_path, 'static', 'uploads', 'cleared')
-    os.makedirs(upload_dir, exist_ok=True)
-    
     try:
-        before_filename = f"before_{uuid.uuid4().hex}.jpg"
-        before_filepath = os.path.join(upload_dir, before_filename)
-        b_data = before_base64.split(",")[1] if "," in before_base64 else before_base64
-        with open(before_filepath, "wb") as fh:
-            fh.write(base64.b64decode(b_data))
+        if not before_base64.startswith("data:image"):
+            before_base64 = "data:image/jpeg;base64," + before_base64
+        if not after_base64.startswith("data:image"):
+            after_base64 = "data:image/jpeg;base64," + after_base64
             
-        after_filename = f"after_{uuid.uuid4().hex}.jpg"
-        after_filepath = os.path.join(upload_dir, after_filename)
-        a_data = after_base64.split(",")[1] if "," in after_base64 else after_base64
-        with open(after_filepath, "wb") as fh:
-            fh.write(base64.b64decode(a_data))
-            
-    except Exception as e:
-        print(f"Error saving cleared images: {e}")
-        return jsonify({"success": False, "message": "เกิดข้อผิดพลาดในการบันทึกรูปภาพ"}), 500
-        
-    try:
         conn = get_db_connection()
         conn.execute('''
             INSERT INTO cleared_reports (report_id, username, before_image, after_image, status)
             VALUES (?, ?, ?, ?, 'pending')
-        ''', (report_id, session['username'], f'static/uploads/cleared/{before_filename}', f'static/uploads/cleared/{after_filename}'))
+        ''', (report_id, session['username'], before_base64, after_base64))
         conn.commit()
     except Exception as e:
         print(f"Error inserting cleared report: {e}")
@@ -1047,29 +1051,15 @@ def submit_pollution_report():
     if not all([image_base64, lat, lng, trash_count is not None]):
         return jsonify({"success": False, "message": "ข้อมูลไม่ครบถ้วน"}), 400
         
-    upload_dir = os.path.join(app.root_path, 'static', 'uploads', 'reports')
-    os.makedirs(upload_dir, exist_ok=True)
-    
-    filename = f"{uuid.uuid4().hex}.jpg"
-    filepath = os.path.join(upload_dir, filename)
-    
     try:
-        if "," in image_base64:
-            image_data = image_base64.split(",")[1]
-        else:
-            image_data = image_base64
-        with open(filepath, "wb") as fh:
-            fh.write(base64.b64decode(image_data))
-    except Exception as e:
-        print(f"Error saving image: {e}")
-        return jsonify({"success": False, "message": "เกิดข้อผิดพลาดในการบันทึกรูปภาพ"}), 500
-        
-    try:
+        if not image_base64.startswith("data:image"):
+            image_base64 = "data:image/jpeg;base64," + image_base64
+            
         conn = get_db_connection()
         conn.execute('''
             INSERT INTO pollution_reports (username, lat, lng, image_path, trash_count, status)
             VALUES (?, ?, ?, ?, ?, 'pending')
-        ''', (session['username'], lat, lng, f'static/uploads/reports/{filename}', trash_count))
+        ''', (session['username'], lat, lng, image_base64, trash_count))
         conn.commit()
     except Exception as e:
         print(f"Error inserting report: {e}")
@@ -1285,15 +1275,15 @@ def update_profile():
                 return jsonify({"success": False, "message": "ชื่อผู้ใช้นี้มีคนใช้แล้ว"}), 400
                 
         # Handle image upload
-        image_filename = None
+        image_base64 = None
         if image_file and image_file.filename != '':
-            upload_dir = os.path.join(app.root_path, 'static', 'uploads', 'profiles')
-            os.makedirs(upload_dir, exist_ok=True)
-            ext = os.path.splitext(image_file.filename)[1]
-            if ext == '':
-                ext = '.jpg'
-            image_filename = f"profile_{uuid.uuid4().hex}{ext}"
-            image_file.save(os.path.join(upload_dir, image_filename))
+            image_data = image_file.read()
+            ext = os.path.splitext(image_file.filename)[1].lower()
+            mime = "image/jpeg"
+            if ext == '.png': mime = "image/png"
+            elif ext == '.webp': mime = "image/webp"
+            b64 = base64.b64encode(image_data).decode('utf-8')
+            image_base64 = f"data:{mime};base64,{b64}"
             
         # Update Database
         if new_username and new_username != old_username:
@@ -1307,8 +1297,8 @@ def update_profile():
             conn.execute("UPDATE daily_quests SET username = %s WHERE username = %s", (new_username, old_username))
             session['username'] = new_username
             
-        if image_filename:
-            conn.execute("UPDATE users SET profile_image = %s WHERE username = %s", (image_filename, session['username']))
+        if image_base64:
+            conn.execute("UPDATE users SET profile_image = %s WHERE username = %s", (image_base64, session['username']))
             
         conn.commit()
         return jsonify({"success": True, "message": "อัปเดตโปรไฟล์สำเร็จ!"})

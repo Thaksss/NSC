@@ -407,7 +407,8 @@
             marker.on('click', function() {
                 let popupContent = `<div style="text-align:center; min-width: 160px;">`;
                 popupContent += `<b>ผู้รายงาน:</b> ${report.username}<br>`;
-                popupContent += `<img src="/${report.image_path}" width="160" style="margin-top:10px; border-radius:8px; object-fit: cover;"><br>`;
+                let imgSrc = report.image_path.startsWith("data:") ? report.image_path : "/" + report.image_path;
+                popupContent += `<img src="${imgSrc}" width="160" style="margin-top:10px; border-radius:8px; object-fit: cover;"><br>`;
                 
                 if (report.is_pending_clear) {
                     popupContent += `<div style="color:#f39c12; margin-top:10px; font-weight:bold; font-size:14px;">กำลังรอแอดมินอนุมัติการเคลียร์</div>`;

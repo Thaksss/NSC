@@ -169,7 +169,7 @@
         {% if reports %}
             {% for report in reports %}
             <div class="report-card">
-                <img src="/{{ report.image_path }}" class="report-img" alt="Pollution Report">
+                <img src="{{ get_image_url(report.image_path) }}" class="report-img" alt="Pollution Report">
                 <div class="report-info">
                     <p><strong>ผู้ใช้:</strong> {{ report.username }}</p>
                     <p><strong>วันที่:</strong> {{ report.created_at }}</p>
@@ -205,11 +205,11 @@
                 <div class="clear-img-wrapper">
                     <div>
                         <p style="font-size:12px;text-align:center;">ก่อนเคลียร์</p>
-                        <img src="/{{ c_report.before_image }}" class="clear-img" alt="Before">
+                        <img src="{{ get_image_url(c_report.before_image) }}" class="clear-img" alt="Before">
                     </div>
                     <div>
                         <p style="font-size:12px;text-align:center;">หลังเคลียร์</p>
-                        <img src="/{{ c_report.after_image }}" class="clear-img" alt="After">
+                        <img src="{{ get_image_url(c_report.after_image) }}" class="clear-img" alt="After">
                     </div>
                 </div>
                 <div class="report-info">
