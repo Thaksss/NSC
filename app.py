@@ -426,8 +426,31 @@ def piautihighlign():
 def game():
     conn = get_db_connection()
     top_users = conn.execute('SELECT username, score, rank, profile_image FROM users ORDER BY score DESC LIMIT 10').fetchall()
+    
+    quests_data = []
+    if session.get('username'):
+        username = session['username']
+        assign_daily_quests(username)
+        daily_quests = conn.execute("SELECT * FROM daily_quests WHERE username = %s AND date = %s", (username, date.today())).fetchone()
+        
+        if daily_quests:
+            q1_info = QUEST_LIST.get(daily_quests['quest1_id'])
+            q2_info = QUEST_LIST.get(daily_quests['quest2_id'])
+            if q1_info:
+                quests_data.append({
+                    'info': q1_info,
+                    'progress': daily_quests['quest1_progress'],
+                    'completed': daily_quests['quest1_completed']
+                })
+            if q2_info:
+                quests_data.append({
+                    'info': q2_info,
+                    'progress': daily_quests['quest2_progress'],
+                    'completed': daily_quests['quest2_completed']
+                })
+
     conn.close()
-    return render_template('game.html', leaderboard=top_users)
+    return render_template('game.html', leaderboard=top_users, quests=quests_data)
 
 @app.route('/ingame')
 def ingame():
@@ -435,40 +458,20 @@ def ingame():
         return redirect(url_for('login'))
         
     username = session['username']
-    assign_daily_quests(username)
     
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE username = %s', (username,)).fetchone()
-    
-    daily_quests = conn.execute("SELECT * FROM daily_quests WHERE username = %s AND date = %s", (username, date.today())).fetchone()
     conn.close()
-    
-    quests_data = []
-    if daily_quests:
-        q1_info = QUEST_LIST.get(daily_quests['quest1_id'])
-        q2_info = QUEST_LIST.get(daily_quests['quest2_id'])
-        if q1_info:
-            quests_data.append({
-                'info': q1_info,
-                'progress': daily_quests['quest1_progress'],
-                'completed': daily_quests['quest1_completed']
-            })
-        if q2_info:
-            quests_data.append({
-                'info': q2_info,
-                'progress': daily_quests['quest2_progress'],
-                'completed': daily_quests['quest2_completed']
-            })
     
     if user:
         score = user['score'] if user['score'] is not None else 0
         rank = user['rank'] if user['rank'] is not None else "หยาดน้ำทะเล"
         profile_image = user['profile_image'] if 'profile_image' in user.keys() and user['profile_image'] else "default_profile.png"
-        return render_template('ingame.html', username=user['username'], score=score, rank=rank, quests=quests_data, profile_image=profile_image)
+        return render_template('ingame.html', username=user['username'], score=score, rank=rank, profile_image=profile_image)
     else:
         score = 0
         rank = "หยาดน้ำทะเล"
-        return render_template('ingame.html', username=session['username'], score=score, rank=rank, quests=quests_data, profile_image="default_profile.png")
+        return render_template('ingame.html', username=session['username'], score=score, rank=rank, profile_image="default_profile.png")
 
 @app.route('/history')
 def history():

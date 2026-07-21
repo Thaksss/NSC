@@ -440,26 +440,6 @@
                         </div>
                     </div>
                 </div>
-                {% if quests %}
-                <div class="daily-quests">
-                    <h3>ภารกิจประจำวัน</h3>
-                    {% for quest in quests %}
-                    <div class="quest-item {% if quest.completed %}completed{% endif %}">
-                        <div class="quest-info">
-                            <h4>{{ quest.info.name }}</h4>
-                            <p>{{ quest.info.desc }}</p>
-                        </div>
-                        <div class="quest-progress">
-                            {% if quest.completed %}
-                                <span>สำเร็จแล้ว</span>
-                            {% else %}
-                                <span>{{ quest.progress }} / {{ quest.info.req }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
                 <a href="/history" class="btn-profile" style="margin-top: 10px;">ประวัติภารกิจ</a>
             </div>
             <div class="right-panel">

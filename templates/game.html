@@ -601,22 +601,27 @@
                 <h2 class="modal-title">เควสรายวัน</h2>
 
                 <div class="quest-list">
-                    <div class="quest-item">
-                        <div class="quest-desc">รายงานจุดที่มีขยะ 20 ชิ้นขึ้นไป</div>
-                        <div class="quest-reward">20 แต้ม</div>
-                        <div class="quest-status">ยังไม่สำเร็จ</div>
-                    </div>
-                    <div class="quest-item">
-                        <div class="quest-desc">ยืนชี้ให้ครบ 3 คน</div>
-                        <div class="quest-reward">20 แต้ม</div>
-                        <div class="quest-status">ยังไม่สำเร็จ</div>
-                    </div>
-                    <div class="quest-item">
-                        <div class="quest-desc">เคลียร์ขยะ 2 ครั้ง</div>
-                        <div class="quest-reward">20 แต้ม</div>
-                        <div class="quest-status">สำเร็จ</div>
-                    </div>
-                    <div class="quest-item">หน้านี้เป็นเพียง DEMO</div>
+                    {% if session.get('username') %}
+                        {% if quests %}
+                            {% for quest in quests %}
+                            <div class="quest-item">
+                                <div class="quest-desc">{{ quest.info.desc }}</div>
+                                <div class="quest-reward">{{ quest.info.points }} แต้ม</div>
+                                <div class="quest-status" style="{% if quest.completed %}color: #27ae60; font-weight: bold;{% else %}color: #e67e22; font-weight: bold;{% endif %}">
+                                    {% if quest.completed %}
+                                        สำเร็จ
+                                    {% else %}
+                                        {{ quest.progress }} / {{ quest.info.req }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="quest-item" style="justify-content: center;">วันนี้ยังไม่มีเควส</div>
+                        {% endif %}
+                    {% else %}
+                        <div class="quest-item" style="justify-content: center;">กรุณาเข้าสู่ระบบเพื่อดูเควสรายวัน</div>
+                    {% endif %}
                 </div>
 
             </div>
