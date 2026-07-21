@@ -162,8 +162,10 @@ def init_db():
     conn.commit()
     conn.close()
 
-init_db()
-
+try:
+    init_db()
+except Exception as e:
+    print(f"CRITICAL ERROR in init_db: {e}")
 def get_water_quality_records():
     global WATER_QUALITY_CACHE, LAST_CACHE_TIME
     
