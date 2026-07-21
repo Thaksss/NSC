@@ -361,7 +361,7 @@ def clear():
     conn = get_db_connection()
     reports = conn.execute("SELECT * FROM pollution_reports WHERE status = 'approved'").fetchall()
     
-    pending_clears = conn.execute('SELECT report_id FROM cleared_reports WHERE status = 'pending'').fetchall()
+    pending_clears = conn.execute("SELECT report_id FROM cleared_reports WHERE status = 'pending'").fetchall()
     pending_ids = [r['report_id'] for r in pending_clears]
     
     conn.close()
