@@ -245,19 +245,23 @@
                 max-width: none !important;
             }
             .parameters-card {
-                padding: 20px;
+                padding: 15px;
                 border-radius: 20px;
+                gap: 15px;
             }
             .param-row {
-                flex-direction: column;
-                align-items: flex-start;
+                flex-direction: row;
+                align-items: center;
                 gap: 10px;
             }
             .param-label {
-                width: 100%;
+                width: 110px;
+                font-size: 14px;
+                padding: 6px 0;
             }
             .param-input {
-                width: 100%;
+                width: auto;
+                flex-grow: 1;
             }
         }
     </style>
@@ -398,7 +402,7 @@
                 <div class="param-row">
                     <div class="param-label">คุณภาพน้ำทะเล</div>
                     <select class="param-input" name="water_quality" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
-                        <option value="">- ไม่ระบุ -</option>
+                        <option value=""> ไม่ระบุ </option>
                         <option value="ดีมาก">ดีมาก</option>
                         <option value="ดี">ดี</option>
                         <option value="พอใช้">พอใช้</option>
