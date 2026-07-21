@@ -396,8 +396,15 @@
 
             <div id="optionalParams" class="parameters-card" style="display: none;">
                 <div class="param-row">
-                    <div class="param-label">คุณภาพน้ำทะเล</div><input type="text" class="param-input"
-                        name="water_quality">
+                    <div class="param-label">คุณภาพน้ำทะเล</div>
+                    <select class="param-input" name="water_quality" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        <option value="">- ไม่ระบุ -</option>
+                        <option value="ดีมาก">ดีมาก</option>
+                        <option value="ดี">ดี</option>
+                        <option value="พอใช้">พอใช้</option>
+                        <option value="เสื่อมโทรม">เสื่อมโทรม</option>
+                        <option value="เสื่อมโทรมมาก">เสื่อมโทรมมาก</option>
+                    </select>
                 </div>
                 <div class="param-row">
                     <div class="param-label">MWQI</div><input type="text" class="param-input" name="mwqi">
