@@ -1141,8 +1141,10 @@ def admin_reports():
             vote_data[t_type][t_id] = {'pass': 0, 'fail': 0}
             
         vote_data[t_type][t_id][t_vote] = row['count']
+    pinned_locations_dict = [dict(row) for row in pinned_locations]
+    approved_pins_dict = [dict(row) for row in approved_pins]
         
-    return render_template('admin_reports.html', reports=reports, cleared_reports=cleared_reports, vote_data=vote_data, pinned_locations=pinned_locations, approved_pins=approved_pins)
+    return render_template('admin_reports.html', reports=reports, cleared_reports=cleared_reports, vote_data=vote_data, pinned_locations=pinned_locations_dict, approved_pins=approved_pins_dict)
 
 @app.route('/admin/approve_report/<int:report_id>', methods=['POST'])
 def approve_report(report_id):
