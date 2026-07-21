@@ -1126,6 +1126,7 @@ def admin_reports():
     reports = conn.execute("SELECT * FROM pollution_reports WHERE status = 'pending' ORDER BY created_at DESC").fetchall()
     cleared_reports = conn.execute("SELECT * FROM cleared_reports WHERE status = 'pending' ORDER BY created_at DESC").fetchall()
     pinned_locations = conn.execute("SELECT * FROM pinned_locations WHERE status = 'pending' ORDER BY id DESC").fetchall()
+    approved_pins = conn.execute("SELECT * FROM pinned_locations WHERE status = 'approved' ORDER BY id DESC").fetchall()
     
     vote_rows = conn.execute('SELECT target_type, target_id, vote, COUNT(*) as count FROM votes GROUP BY target_type, target_id, vote').fetchall()
     conn.close()
@@ -1141,7 +1142,7 @@ def admin_reports():
             
         vote_data[t_type][t_id][t_vote] = row['count']
         
-    return render_template('admin_reports.html', reports=reports, cleared_reports=cleared_reports, vote_data=vote_data, pinned_locations=pinned_locations)
+    return render_template('admin_reports.html', reports=reports, cleared_reports=cleared_reports, vote_data=vote_data, pinned_locations=pinned_locations, approved_pins=approved_pins)
 
 @app.route('/admin/approve_report/<int:report_id>', methods=['POST'])
 def approve_report(report_id):
