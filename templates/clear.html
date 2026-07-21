@@ -361,40 +361,42 @@
         }).addTo(map);
 
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
+            navigator.geolocation.watchPosition(
                 (position) => {
                     userLocation = L.latLng(position.coords.latitude, position.coords.longitude);
-                    map.setView(userLocation, 12);
-                    
-                    const userIcon = L.divIcon({
-                        className: 'custom-div-icon',
-                        html: "<div style='background-color:#e74c3c; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);'></div>",
-                        iconSize: [22, 22],
-                        iconAnchor: [11, 11]
-                    });
-                    
-                    userMarker = L.marker(userLocation, {icon: userIcon}).addTo(map).bindPopup("<b>ตำแหน่งปัจจุบันของคุณ</b>");
+                    if (!userMarker) {
+                        map.setView(userLocation, 12);
+                        const userIcon = L.divIcon({
+                            className: 'custom-div-icon',
+                            html: "<div style='background-color:#e74c3c; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);'></div>",
+                            iconSize: [22, 22],
+                            iconAnchor: [11, 11]
+                        });
+                        userMarker = L.marker(userLocation, {icon: userIcon}).addTo(map).bindPopup("<b>ตำแหน่งปัจจุบันของคุณ</b>");
+                    } else {
+                        userMarker.setLatLng(userLocation);
+                    }
                 },
                 (error) => {
                     console.log("Geolocation error:", error);
-                    alert('ระบบไม่สามารถดึงตำแหน่งของคุณได้ หากไม่อนุญาตจะไม่สามารถกดเคลียร์มลพิษได้ครับ');
+                    if (!userMarker) alert('ระบบไม่สามารถดึงตำแหน่งของคุณได้ หากไม่อนุญาตจะไม่สามารถทำภารกิจได้ครับ');
                 },
-                { enableHighAccuracy: true }
+                { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
             );
         }
 
         const blueIcon = L.divIcon({
             className: 'custom-div-icon',
-            html: "<div style='background-color:#3498db; width:24px; height:24px; border-radius:50%; border:2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.5);'></div>",
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
+            html: "<div style='display:flex; justify-content:center; align-items:center; width:100%; height:100%;'><div style='background-color:#3498db; width:24px; height:24px; border-radius:50%; border:2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.5); pointer-events:none;'></div></div>",
+            iconSize: [48, 48],
+            iconAnchor: [24, 24]
         });
 
         const yellowIcon = L.divIcon({
             className: 'custom-div-icon',
-            html: "<div style='background-color:#f1c40f; width:24px; height:24px; border-radius:50%; border:2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.5);'></div>",
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
+            html: "<div style='display:flex; justify-content:center; align-items:center; width:100%; height:100%;'><div style='background-color:#f1c40f; width:24px; height:24px; border-radius:50%; border:2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.5); pointer-events:none;'></div></div>",
+            iconSize: [48, 48],
+            iconAnchor: [24, 24]
         });
 
         reports.forEach(report => {
