@@ -715,9 +715,8 @@ def detect_trash():
     try:
         if not GEMINI_API_KEY:
             return jsonify({
-                "success": True,
-                "total_pieces": 0,
-                "items": []
+                "success": False,
+                "message": "Gemini API Key is not set in Environment Variables."
             })
             
         # Use Gemini API
@@ -754,10 +753,8 @@ def detect_trash():
         print(f"Detect Trash Error: {str(e)}")
         print(traceback.format_exc())
         return jsonify({
-            "success": True,
-            "total_pieces": 0,
-            "items": [],
-            "debug_error": str(e)  # Added temporarily for debugging
+            "success": False,
+            "message": f"Gemini Error: {str(e)}"
         })
 
 @app.route('/submit_pollution_report', methods=['POST'])
