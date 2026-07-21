@@ -330,6 +330,8 @@
             iconAnchor: [12, 12]
         });
 
+        renderMarkers(); // Call immediately to ensure pins are shown
+
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(
                 (position) => {

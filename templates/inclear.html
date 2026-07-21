@@ -101,7 +101,7 @@
                 width: 95%;
             }
             .cameras-wrapper {
-                flex-direction: row;
+                flex-direction: column;
                 gap: 15px;
                 margin-bottom: 20px;
             }
@@ -110,10 +110,12 @@
                 margin-bottom: 8px;
             }
             .camera-text {
-                font-size: 18px;
+                font-size: 24px;
             }
             .camera-box {
                 border-radius: 15px;
+                aspect-ratio: auto;
+                height: 200px;
             }
             .btn-submit {
                 font-size: 18px;
@@ -156,10 +158,9 @@
         }
 
         .camera-text {
-            color: white;
+            color: #346675;
             font-size: 32px;
             font-weight: 600;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
             z-index: 10;
         }
 
