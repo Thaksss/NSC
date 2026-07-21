@@ -198,18 +198,16 @@ def assign_daily_quests(username):
     conn = get_db_connection()
     today = date.today()
     try:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         # Check if quests exist for today
-        cur.execute("SELECT id FROM daily_quests WHERE username = %s AND date = %s", (username, today))
-        existing = cur.fetchone()
+        existing = conn.execute("SELECT id FROM daily_quests WHERE username = %s AND date = %s", (username, today)).fetchone()
         
         if not existing:
             # Delete old quests for this user
-            cur.execute("DELETE FROM daily_quests WHERE username = %s", (username,))
+            conn.execute("DELETE FROM daily_quests WHERE username = %s", (username,))
             
             # Assign 2 random new quests
             quest_ids = random.sample(list(QUEST_LIST.keys()), 2)
-            cur.execute(
+            conn.execute(
                 "INSERT INTO daily_quests (username, date, quest1_id, quest2_id) VALUES (%s, %s, %s, %s)",
                 (username, today, quest_ids[0], quest_ids[1])
             )
@@ -223,9 +221,7 @@ def update_quest_progress(username, action_type):
     conn = get_db_connection()
     today = date.today()
     try:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT * FROM daily_quests WHERE username = %s AND date = %s", (username, today))
-        quest_data = cur.fetchone()
+        quest_data = conn.execute("SELECT * FROM daily_quests WHERE username = %s AND date = %s", (username, today)).fetchone()
         
         if quest_data:
             q1_id = quest_data['quest1_id']
@@ -240,10 +236,10 @@ def update_quest_progress(username, action_type):
                 new_prog = quest_data['quest1_progress'] + 1
                 if new_prog >= q1_info['req']:
                     # Complete quest 1
-                    cur.execute("UPDATE daily_quests SET quest1_progress = %s, quest1_completed = TRUE WHERE id = %s", (new_prog, quest_data['id']))
-                    cur.execute("UPDATE users SET score = score + %s WHERE username = %s", (q1_info['points'], username))
+                    conn.execute("UPDATE daily_quests SET quest1_progress = %s, quest1_completed = TRUE WHERE id = %s", (new_prog, quest_data['id']))
+                    conn.execute("UPDATE users SET score = score + %s WHERE username = %s", (q1_info['points'], username))
                 else:
-                    cur.execute("UPDATE daily_quests SET quest1_progress = %s WHERE id = %s", (new_prog, quest_data['id']))
+                    conn.execute("UPDATE daily_quests SET quest1_progress = %s WHERE id = %s", (new_prog, quest_data['id']))
                 updated = True
                 
             # Check quest 2
@@ -251,10 +247,10 @@ def update_quest_progress(username, action_type):
                 new_prog = quest_data['quest2_progress'] + 1
                 if new_prog >= q2_info['req']:
                     # Complete quest 2
-                    cur.execute("UPDATE daily_quests SET quest2_progress = %s, quest2_completed = TRUE WHERE id = %s", (new_prog, quest_data['id']))
-                    cur.execute("UPDATE users SET score = score + %s WHERE username = %s", (q2_info['points'], username))
+                    conn.execute("UPDATE daily_quests SET quest2_progress = %s, quest2_completed = TRUE WHERE id = %s", (new_prog, quest_data['id']))
+                    conn.execute("UPDATE users SET score = score + %s WHERE username = %s", (q2_info['points'], username))
                 else:
-                    cur.execute("UPDATE daily_quests SET quest2_progress = %s WHERE id = %s", (new_prog, quest_data['id']))
+                    conn.execute("UPDATE daily_quests SET quest2_progress = %s WHERE id = %s", (new_prog, quest_data['id']))
                 updated = True
                 
             if updated:
@@ -444,9 +440,7 @@ def ingame():
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE username = %s', (username,)).fetchone()
     
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute("SELECT * FROM daily_quests WHERE username = %s AND date = %s", (username, date.today()))
-    daily_quests = cur.fetchone()
+    daily_quests = conn.execute("SELECT * FROM daily_quests WHERE username = %s AND date = %s", (username, date.today())).fetchone()
     conn.close()
     
     quests_data = []
@@ -1184,12 +1178,10 @@ def update_profile():
     
     conn = get_db_connection()
     try:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        
         # Check if new username is available
         if new_username and new_username != old_username:
-            cur.execute("SELECT id FROM users WHERE username = %s", (new_username,))
-            if cur.fetchone():
+            user_check = conn.execute("SELECT id FROM users WHERE username = %s", (new_username,)).fetchone()
+            if user_check:
                 return jsonify({"success": False, "message": "ชื่อผู้ใช้นี้มีคนใช้แล้ว"}), 400
                 
         # Handle image upload
@@ -1206,17 +1198,17 @@ def update_profile():
         # Update Database
         if new_username and new_username != old_username:
             # Update username in all related tables
-            cur.execute("UPDATE users SET username = %s WHERE username = %s", (new_username, old_username))
-            cur.execute("UPDATE pollution_reports SET username = %s WHERE username = %s", (new_username, old_username))
-            cur.execute("UPDATE cleared_reports SET username = %s WHERE username = %s", (new_username, old_username))
-            cur.execute("UPDATE pinned_locations SET username = %s WHERE username = %s", (new_username, old_username))
-            cur.execute("UPDATE reviews SET username = %s WHERE username = %s", (new_username, old_username))
-            cur.execute("UPDATE votes SET username = %s WHERE username = %s", (new_username, old_username))
-            cur.execute("UPDATE daily_quests SET username = %s WHERE username = %s", (new_username, old_username))
+            conn.execute("UPDATE users SET username = %s WHERE username = %s", (new_username, old_username))
+            conn.execute("UPDATE pollution_reports SET username = %s WHERE username = %s", (new_username, old_username))
+            conn.execute("UPDATE cleared_reports SET username = %s WHERE username = %s", (new_username, old_username))
+            conn.execute("UPDATE pinned_locations SET username = %s WHERE username = %s", (new_username, old_username))
+            conn.execute("UPDATE reviews SET username = %s WHERE username = %s", (new_username, old_username))
+            conn.execute("UPDATE votes SET username = %s WHERE username = %s", (new_username, old_username))
+            conn.execute("UPDATE daily_quests SET username = %s WHERE username = %s", (new_username, old_username))
             session['username'] = new_username
             
         if image_filename:
-            cur.execute("UPDATE users SET profile_image = %s WHERE username = %s", (image_filename, session['username']))
+            conn.execute("UPDATE users SET profile_image = %s WHERE username = %s", (image_filename, session['username']))
             
         conn.commit()
         return jsonify({"success": True, "message": "อัปเดตโปรไฟล์สำเร็จ!"})
