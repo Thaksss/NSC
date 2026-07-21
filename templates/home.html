@@ -1294,7 +1294,7 @@
         function closeDetailPanel() {
             const dp = document.getElementById('detailPanel');
             dp.classList.remove('open');
-            dp.style.height = '';
+            dp.style.removeProperty('height');
             document.getElementById('searchWrapper').classList.remove('shifted');
 
             if (auraCircle) {
@@ -1335,7 +1335,7 @@
                 startY = e.touches[0].clientY;
                 initialHeight = sheet.offsetHeight;
                 isDragging = true;
-                sheet.style.transition = 'none';
+                sheet.style.setProperty('transition', 'none', 'important');
             }, { passive: true });
 
             handle.addEventListener('touchmove', (e) => {
@@ -1350,21 +1350,21 @@
                 if (newHeight > maxHeight) newHeight = maxHeight;
                 if (newHeight < minHeight) newHeight = minHeight;
                 
-                sheet.style.height = `${newHeight}px`;
+                sheet.style.setProperty('height', `${newHeight}px`, 'important');
             }, { passive: true });
 
             handle.addEventListener('touchend', (e) => {
                 if (!isDragging) return;
                 isDragging = false;
-                sheet.style.transition = 'height 0.3s ease, bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
+                sheet.style.setProperty('transition', 'height 0.3s ease, bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1)', 'important');
                 
                 let finalHeight = sheet.offsetHeight;
                 let threshold = window.innerHeight * 0.5;
                 
                 if (finalHeight > threshold) {
-                    sheet.style.height = '85vh'; // Expand
+                    sheet.style.setProperty('height', '85vh', 'important'); // Expand
                 } else {
-                    sheet.style.height = '35vh'; // Collapse
+                    sheet.style.setProperty('height', '35vh', 'important'); // Collapse
                 }
             });
         }
