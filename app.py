@@ -292,65 +292,104 @@ def check_vote_quests(username):
 def get_water_quality_records():
     global WATER_QUALITY_CACHE, LAST_CACHE_TIME
     
-    if WATER_QUALITY_CACHE is not None and (time.time() - LAST_CACHE_TIME < CACHE_DURATION_SECONDS):
-        return WATER_QUALITY_CACHE
-        
-    records = None
-    cache_path = os.path.join(os.path.dirname(__file__), 'cached_water_data.json')
-    if os.path.exists(cache_path):
-        try:
-            import json
-            with open(cache_path, 'r', encoding='utf-8') as f:
-                records = json.load(f)
-            print(f"โหลดข้อมูลจากไฟล์สำรอง (Sync Data) สำเร็จ ({len(records)} รายการ)")
-        except Exception as cache_err:
-            print(f"ไม่สามารถโหลดข้อมูลจากไฟล์สำรองได้: {cache_err}")
-    else:
-        print("ไม่พบไฟล์ข้อมูลคุณภาพน้ำ กรุณารัน sync_data.py ก่อน")
-                
-    if not records:
-        return []
-        
-    records = sorted(records, key=lambda x: x.get('date', ''))
-    
     formatted_beaches = []
-    for row in records:
+    
+    if WATER_QUALITY_CACHE is not None and (time.time() - LAST_CACHE_TIME < CACHE_DURATION_SECONDS):
+        formatted_beaches = list(WATER_QUALITY_CACHE)
+    else:
+        records = None
+        cache_path = os.path.join(os.path.dirname(__file__), 'cached_water_data.json')
+        if os.path.exists(cache_path):
+            try:
+                import json
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    records = json.load(f)
+            except Exception as cache_err:
+                print(f"Error loading cache: {cache_err}")
+                
+        if records:
+            records = sorted(records, key=lambda x: x.get('date', ''))
+            
+            for row in records:
+                try:
+                    lat = float(row.get('latitude')) if row.get('latitude') else None
+                    lng = float(row.get('longitude')) if row.get('longitude') else None
+                except ValueError:
+                    lat, lng = None, None
+
+                if lat and lng:
+                    soway_class = row.get('soway_class', 'ไม่ทราบพารามิเตอร์')
+                    
+                    color = "#2ecc71"
+                    if "พอใช้" in soway_class:
+                        color = "#f1c40f"
+                    elif "เสื่อมโทรม" in soway_class:
+                        color = "#e74c3c"
+
+                    beach_info = {
+                        "beach_name": row.get('area_name', 'ไม่ระบุชื่อ'),
+                        "station_code": row.get('station', 'ไม่ระบุสถานี'),
+                        "province": row.get('province', 'ไม่ระบุจังหวัด'),
+                        "lat": lat,
+                        "lng": lng,
+                        "status": soway_class,
+                        "mwqi": row.get('soway_score', '-'),
+                        "color": color,
+                        "do_val": row.get('dissolved_oxygen_mg_l', '-'),
+                        "salinity": row.get('salinity_ppt', '-'),
+                        "tss": row.get('total_suspended_solids_mg_l', '-'),
+                        "ph": row.get('ph', '-'),
+                        "date": row.get('date', ''),
+                        "year": row.get('date', '2021').split('-')[0]
+                    }
+                    formatted_beaches.append(beach_info)
+                    
+            WATER_QUALITY_CACHE = formatted_beaches
+            LAST_CACHE_TIME = time.time()
+            
+    # Now fetch approved pins and append them
+    conn = get_db_connection()
+    approved_pins = conn.execute("SELECT * FROM pinned_locations WHERE status = 'approved'").fetchall()
+    conn.close()
+    
+    final_beaches = list(formatted_beaches) if formatted_beaches else []
+    
+    from datetime import date
+    current_year = str(date.today().year)
+    for pin in approved_pins:
         try:
-            lat = float(row.get('latitude')) if row.get('latitude') else None
-            lng = float(row.get('longitude')) if row.get('longitude') else None
+            lat = float(pin['lat'])
+            lng = float(pin['lng'])
         except ValueError:
-            lat, lng = None, None
-
-        if lat and lng:
-            soway_class = row.get('soway_class', 'ไม่ทราบพารามิเตอร์')
+            continue
             
-            color = "#2ecc71"
-            if "พอใช้" in soway_class:
-                color = "#f1c40f"
-            elif "เสื่อมโทรม" in soway_class:
-                color = "#e74c3c"
-
-            beach_info = {
-                "beach_name": row.get('area_name', 'ไม่ระบุชื่อ'),
-                "station_code": row.get('station', 'ไม่ระบุสถานี'),
-                "province": row.get('province', 'ไม่ระบุจังหวัด'),
-                "lat": lat,
-                "lng": lng,
-                "status": soway_class,
-                "mwqi": row.get('soway_score', '-'),
-                "color": color,
-                "do_val": row.get('dissolved_oxygen_mg_l', '-'),
-                "salinity": row.get('salinity_ppt', '-'),
-                "tss": row.get('total_suspended_solids_mg_l', '-'),
-                "ph": row.get('ph', '-'),
-                "date": row.get('date', ''),
-                "year": row.get('date', '2021').split('-')[0]
-            }
-            formatted_beaches.append(beach_info)
+        color = "#2ecc71"
+        status = pin['water_quality'] or 'ปกติ'
+        if "พอใช้" in status:
+            color = "#f1c40f"
+        elif "เสื่อมโทรม" in status:
+            color = "#e74c3c"
             
-    WATER_QUALITY_CACHE = formatted_beaches
-    LAST_CACHE_TIME = time.time()
-    return formatted_beaches
+        final_beaches.append({
+            "beach_name": pin['place_name'],
+            "station_code": "หมุดจากผู้ใช้ (" + pin['username'] + ")",
+            "province": pin['province'],
+            "lat": lat,
+            "lng": lng,
+            "status": status,
+            "mwqi": pin['mwqi'] or '-',
+            "color": color,
+            "do_val": pin['do_val'] or '-',
+            "salinity": '-',
+            "tss": pin['tss'] or '-',
+            "ph": pin['ph'] or '-',
+            "date": "",
+            "year": current_year,
+            "is_user_pin": True,
+            "comment": pin['comment'] or '-'
+        })
+        
+    return final_beaches
 
 @app.route('/')
 def index():
@@ -1086,6 +1125,7 @@ def admin_reports():
     conn = get_db_connection()
     reports = conn.execute("SELECT * FROM pollution_reports WHERE status = 'pending' ORDER BY created_at DESC").fetchall()
     cleared_reports = conn.execute("SELECT * FROM cleared_reports WHERE status = 'pending' ORDER BY created_at DESC").fetchall()
+    pinned_locations = conn.execute("SELECT * FROM pinned_locations WHERE status = 'pending' ORDER BY id DESC").fetchall()
     
     vote_rows = conn.execute('SELECT target_type, target_id, vote, COUNT(*) as count FROM votes GROUP BY target_type, target_id, vote').fetchall()
     conn.close()
@@ -1101,7 +1141,7 @@ def admin_reports():
             
         vote_data[t_type][t_id][t_vote] = row['count']
         
-    return render_template('admin_reports.html', reports=reports, cleared_reports=cleared_reports, vote_data=vote_data)
+    return render_template('admin_reports.html', reports=reports, cleared_reports=cleared_reports, vote_data=vote_data, pinned_locations=pinned_locations)
 
 @app.route('/admin/approve_report/<int:report_id>', methods=['POST'])
 def approve_report(report_id):
@@ -1166,6 +1206,36 @@ def reject_clear(clear_id):
         conn.commit()
     except Exception as e:
         print(f"Error rejecting clear: {e}")
+    finally:
+        conn.close()
+    return redirect(url_for('admin_reports'))
+
+@app.route('/admin/approve_pin/<int:pin_id>', methods=['POST'])
+def approve_pin(pin_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('home'))
+        
+    try:
+        conn = get_db_connection()
+        conn.execute("UPDATE pinned_locations SET status = 'approved' WHERE id = %s", (pin_id,))
+        conn.commit()
+    except Exception as e:
+        print(f"Error approving pin: {e}")
+    finally:
+        conn.close()
+    return redirect(url_for('admin_reports'))
+
+@app.route('/admin/reject_pin/<int:pin_id>', methods=['POST'])
+def reject_pin(pin_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('home'))
+        
+    try:
+        conn = get_db_connection()
+        conn.execute("DELETE FROM pinned_locations WHERE id = %s", (pin_id,))
+        conn.commit()
+    except Exception as e:
+        print(f"Error rejecting pin: {e}")
     finally:
         conn.close()
     return redirect(url_for('admin_reports'))
