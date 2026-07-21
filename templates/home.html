@@ -598,6 +598,19 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
+            .drag-handle {
+                display: block;
+                width: 40px;
+                height: 5px;
+                background-color: #cbd5e1;
+                border-radius: 3px;
+                margin: 10px auto;
+                cursor: grab;
+                touch-action: none;
+            }
+        }
+        .drag-handle {
+            display: none;
         }
     </style>
     <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
@@ -759,7 +772,8 @@
         </main>
 
         <aside class="sidebar">
-            <div class="sidebar-header">
+            <div class="sidebar-header" id="sidebar-drag-handle">
+                <div class="drag-handle"></div>
                 <h2>ชายหาดทั่วประเทศ</h2>
                 <p class="subtitle">แสดงคุณภาพน้ำทะเลปีล่าสุดของแต่ละสถานี</p>
             </div>
@@ -790,7 +804,8 @@
         </aside>
 
         <aside class="detail-sidebar-left" id="detailPanel">
-            <div class="detail-header-cover">
+            <div class="detail-header-cover" id="detail-drag-handle">
+                <div class="drag-handle" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%);"></div>
                 <span>🏖️</span>
                 <button class="btn-close-detail" onclick="closeDetailPanel()">×</button>
             </div>
@@ -1277,7 +1292,9 @@
         }
 
         function closeDetailPanel() {
-            document.getElementById('detailPanel').classList.remove('open');
+            const dp = document.getElementById('detailPanel');
+            dp.classList.remove('open');
+            dp.style.height = '';
             document.getElementById('searchWrapper').classList.remove('shifted');
 
             if (auraCircle) {
@@ -1305,8 +1322,63 @@
                 }
             }
         });
-    </script>
 
+        // Bottom Sheet Drag Logic for Mobile
+        function setupBottomSheet(sheet, handle) {
+            let startY = 0;
+            let currentY = 0;
+            let isDragging = false;
+            let initialHeight = 0;
+
+            handle.addEventListener('touchstart', (e) => {
+                if (window.innerWidth > 768) return;
+                startY = e.touches[0].clientY;
+                initialHeight = sheet.offsetHeight;
+                isDragging = true;
+                sheet.style.transition = 'none';
+            }, { passive: true });
+
+            handle.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                currentY = e.touches[0].clientY;
+                let deltaY = startY - currentY;
+                let newHeight = initialHeight + deltaY;
+                
+                // Limit height
+                let minHeight = window.innerHeight * 0.2;
+                let maxHeight = window.innerHeight * 0.85;
+                if (newHeight > maxHeight) newHeight = maxHeight;
+                if (newHeight < minHeight) newHeight = minHeight;
+                
+                sheet.style.height = `${newHeight}px`;
+            }, { passive: true });
+
+            handle.addEventListener('touchend', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                sheet.style.transition = 'height 0.3s ease, bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
+                
+                let finalHeight = sheet.offsetHeight;
+                let threshold = window.innerHeight * 0.5;
+                
+                if (finalHeight > threshold) {
+                    sheet.style.height = '85vh'; // Expand
+                } else {
+                    sheet.style.height = '35vh'; // Collapse
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.querySelector('.sidebar');
+            const sidebarHandle = document.getElementById('sidebar-drag-handle');
+            if (sidebar && sidebarHandle) setupBottomSheet(sidebar, sidebarHandle);
+
+            const detailSidebar = document.querySelector('.detail-sidebar-left');
+            const detailHandle = document.getElementById('detail-drag-handle');
+            if (detailSidebar && detailHandle) setupBottomSheet(detailSidebar, detailHandle);
+        });
+    </script>
 </body>
 
 </html>
