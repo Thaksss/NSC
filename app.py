@@ -57,9 +57,29 @@ def get_db_connection():
     if not db_url:
         print("WARNING: DATABASE_URL is not set!")
         # Fallback to local postgres if needed, but we should fail gracefully
+        pass
     
     conn = psycopg2.connect(db_url)
     return PostgresConnection(conn)
+
+def update_user_rank_db(conn, username):
+    try:
+        user = conn.execute('SELECT score FROM users WHERE username = %s', (username,)).fetchone()
+        if user:
+            score = user['score'] or 0
+            if score <= 50:
+                rank = 'หยาดน้ำทะเล 💧'
+            elif score <= 200:
+                rank = 'คลื่นลูกใหม่ 🌊'
+            elif score <= 500:
+                rank = 'ผู้พิทักษ์ชายหาด 🛡️'
+            elif score <= 1000:
+                rank = 'นักสู้แห่งท้องทะเล 🦸‍♂️'
+            else:
+                rank = 'เจ้าสมุทร 👑'
+            conn.execute('UPDATE users SET rank = %s WHERE username = %s', (rank, username))
+    except Exception as e:
+        print(f"Error updating rank: {e}")
 
 def init_db():
     conn = get_db_connection()
@@ -238,6 +258,7 @@ def update_quest_progress(username, action_type):
                     # Complete quest 1
                     conn.execute("UPDATE daily_quests SET quest1_progress = %s, quest1_completed = TRUE WHERE id = %s", (new_prog, quest_data['id']))
                     conn.execute("UPDATE users SET score = score + %s WHERE username = %s", (q1_info['points'], username))
+                    update_user_rank_db(conn, username)
                 else:
                     conn.execute("UPDATE daily_quests SET quest1_progress = %s WHERE id = %s", (new_prog, quest_data['id']))
                 updated = True
@@ -249,6 +270,7 @@ def update_quest_progress(username, action_type):
                     # Complete quest 2
                     conn.execute("UPDATE daily_quests SET quest2_progress = %s, quest2_completed = TRUE WHERE id = %s", (new_prog, quest_data['id']))
                     conn.execute("UPDATE users SET score = score + %s WHERE username = %s", (q2_info['points'], username))
+                    update_user_rank_db(conn, username)
                 else:
                     conn.execute("UPDATE daily_quests SET quest2_progress = %s WHERE id = %s", (new_prog, quest_data['id']))
                 updated = True
@@ -1156,7 +1178,8 @@ def approve_report(report_id):
         report = conn.execute('SELECT * FROM pollution_reports WHERE id = ?', (report_id,)).fetchone()
         if report and report['status'] == 'pending':
             conn.execute("UPDATE pollution_reports SET status = 'approved' WHERE id = ?", (report_id,))
-            conn.execute('UPDATE users SET score = score + 2 WHERE username = ?', (report['username'],))
+            conn.execute('UPDATE users SET score = score + 2 WHERE username = %s', (report['username'],))
+            update_user_rank_db(conn, report['username'])
             conn.commit()
     except Exception as e:
         print(f"Error approving report: {e}")
@@ -1190,7 +1213,8 @@ def approve_clear(clear_id):
         if clear_report and clear_report['status'] == 'pending':
             conn.execute("UPDATE cleared_reports SET status = 'approved' WHERE id = ?", (clear_id,))
             conn.execute("UPDATE pollution_reports SET status = 'cleared' WHERE id = ?", (clear_report['report_id'],))
-            conn.execute('UPDATE users SET score = score + 5 WHERE username = ?', (clear_report['username'],))
+            conn.execute('UPDATE users SET score = score + 5 WHERE username = %s', (clear_report['username'],))
+            update_user_rank_db(conn, clear_report['username'])
             conn.commit()
     except Exception as e:
         print(f"Error approving clear: {e}")

@@ -435,7 +435,10 @@
                     <div class="user-info">
                         <div class="user-name">{{ username }}</div>
                         <div class="user-rank-score">
-                            <span class="user-rank">{{ rank }}</span>
+                            <span class="user-rank" style="display: flex; align-items: center; gap: 8px;">
+                                {{ rank }}
+                                <button onclick="openRankModal()" style="background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0; color: white;" title="ดูยศทั้งหมด">ℹ️</button>
+                            </span>
                             <span class="user-score">คะแนน: {{ score }} แต้ม</span>
                         </div>
                     </div>
@@ -447,6 +450,20 @@
                 <a href="/clear" class="btn-action">เคลียร์มลพิษ</a>
                 <a href="/confirm" class="btn-action">ยืนยันมลพิษ</a>
             </div>
+        </div>
+    </div>
+
+    <div id="rankModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center; backdrop-filter: blur(5px);">
+        <div style="background:white; padding:30px; border-radius:20px; width:90%; max-width:400px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position:relative;">
+            <span onclick="closeRankModal()" style="position:absolute; top:15px; right:20px; font-size:1.5rem; cursor:pointer; color:#7f8c8d;">&times;</span>
+            <h3 style="margin-top:0; margin-bottom:20px; text-align:center; color:#2c3e50;">🏆 ระดับยศทั้งหมด</h3>
+            <ul style="list-style: none; padding: 0; margin: 0; text-align: left; font-size: 1.1rem; line-height: 2.2; color:#34495e;">
+                <li>💧 <b>หยาดน้ำทะเล</b> (0 - 50 คะแนน)</li>
+                <li>🌊 <b>คลื่นลูกใหม่</b> (51 - 200 คะแนน)</li>
+                <li>🛡️ <b>ผู้พิทักษ์ชายหาด</b> (201 - 500 คะแนน)</li>
+                <li>🦸‍♂️ <b>นักสู้แห่งท้องทะเล</b> (501 - 1000 คะแนน)</li>
+                <li>👑 <b>เจ้าสมุทร</b> (1001 คะแนนขึ้นไป)</li>
+            </ul>
         </div>
     </div>
 
@@ -471,6 +488,18 @@
     </div>
 
     <script>
+        function closeProfileModal() {
+            document.getElementById('profileModal').style.display = 'none';
+        }
+
+        function openRankModal() {
+            document.getElementById('rankModal').style.display = 'flex';
+        }
+
+        function closeRankModal() {
+            document.getElementById('rankModal').style.display = 'none';
+        }
+
         function openProfileModal() {
             document.getElementById('profileModal').style.display = 'flex';
         }
