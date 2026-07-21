@@ -316,8 +316,8 @@ def ingame():
     conn.close()
     
     if user:
-        score = user['score'] if 'score' in user.keys() else 0
-        rank = user['rank'] if 'rank' in user.keys() else "หยาดน้ำทะเล"
+        score = user['score'] if user['score'] is not None else 0
+        rank = user['rank'] if user['rank'] is not None else "หยาดน้ำทะเล"
     else:
         score = 0
         rank = "หยาดน้ำทะเล"
@@ -545,7 +545,7 @@ def login():
                 conn_admin.close()
                 session['role'] = 'admin'
             else:
-                session['role'] = user['role'] if 'role' in user.keys() else 'user'
+                session['role'] = user['role'] if user['role'] is not None else 'user'
                 
             print(f"เข้าสู่ระบบสำเร็จ: {user['username']} (Role: {session.get('role')})")
             return redirect(url_for('home'))
