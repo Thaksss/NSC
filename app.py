@@ -736,10 +736,14 @@ def detect_trash():
         text = response.text
         
         # Clean up markdown formatting if present
+        text = text.strip()
         if text.startswith("```json"):
-            text = text.strip("```json").strip("```").strip()
+            text = text[7:]
         elif text.startswith("```"):
-            text = text.strip("```").strip()
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        text = text.strip()
             
         data = json.loads(text)
         data["success"] = True
@@ -752,7 +756,8 @@ def detect_trash():
         return jsonify({
             "success": True,
             "total_pieces": 0,
-            "items": []
+            "items": [],
+            "debug_error": str(e)  # Added temporarily for debugging
         })
 
 @app.route('/submit_pollution_report', methods=['POST'])
