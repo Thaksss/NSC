@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import requests
-import sqlite3
+import psycopg2
+import psycopg2.extras
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
@@ -31,17 +32,40 @@ WATER_QUALITY_CACHE = None
 LAST_CACHE_TIME = 0
 CACHE_DURATION_SECONDS = 3600 * 24 # 1 day
 
+class PostgresConnection:
+    def __init__(self, conn):
+        self.conn = conn
+        
+    def execute(self, query, params=None):
+        query = query.replace('?', '%s')
+        cur = self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(query, params)
+        return cur
+        
+    def commit(self):
+        self.conn.commit()
+        
+    def rollback(self):
+        self.conn.rollback()
+        
+    def close(self):
+        self.conn.close()
+
 def get_db_connection():
-    conn = sqlite3.connect('database.db')
-    conn.row_factory = sqlite3.Row
-    return conn
+    db_url = os.environ.get("DATABASE_URL")
+    if not db_url:
+        print("WARNING: DATABASE_URL is not set!")
+        # Fallback to local postgres if needed, but we should fail gracefully
+    
+    conn = psycopg2.connect(db_url)
+    return PostgresConnection(conn)
 
 def init_db():
     conn = get_db_connection()
     
     conn.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL
@@ -50,22 +74,28 @@ def init_db():
     
     try:
         conn.execute('ALTER TABLE users ADD COLUMN score INTEGER DEFAULT 0')
-    except sqlite3.OperationalError:
-        pass
+    except psycopg2.errors.DuplicateColumn:
+        conn.rollback()
+    except Exception:
+        conn.rollback()
         
     try:
-        conn.execute('ALTER TABLE users ADD COLUMN rank TEXT DEFAULT "หยาดน้ำทะเล"')
-    except sqlite3.OperationalError:
-        pass
+        conn.execute('ALTER TABLE users ADD COLUMN rank TEXT DEFAULT \'หยาดน้ำทะเล\'')
+    except psycopg2.errors.DuplicateColumn:
+        conn.rollback()
+    except Exception:
+        conn.rollback()
         
     try:
-        conn.execute('ALTER TABLE users ADD COLUMN role TEXT DEFAULT "user"')
-    except sqlite3.OperationalError:
-        pass
+        conn.execute('ALTER TABLE users ADD COLUMN role TEXT DEFAULT \'user\'')
+    except psycopg2.errors.DuplicateColumn:
+        conn.rollback()
+    except Exception:
+        conn.rollback()
     
     conn.execute('''
         CREATE TABLE IF NOT EXISTS reviews (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             beach_name TEXT NOT NULL,
             username TEXT NOT NULL,
             stars INTEGER NOT NULL,
@@ -76,7 +106,7 @@ def init_db():
 
     conn.execute('''
         CREATE TABLE IF NOT EXISTS pinned_locations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             username TEXT NOT NULL,
             province TEXT NOT NULL,
             place_name TEXT NOT NULL,
@@ -94,7 +124,7 @@ def init_db():
     
     conn.execute('''
         CREATE TABLE IF NOT EXISTS pollution_reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             username TEXT NOT NULL,
             lat TEXT NOT NULL,
             lng TEXT NOT NULL,
@@ -107,7 +137,7 @@ def init_db():
     
     conn.execute('''
         CREATE TABLE IF NOT EXISTS cleared_reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             report_id INTEGER NOT NULL,
             username TEXT NOT NULL,
             before_image TEXT NOT NULL,
@@ -119,7 +149,7 @@ def init_db():
     
     conn.execute('''
         CREATE TABLE IF NOT EXISTS votes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             username TEXT NOT NULL,
             target_type TEXT NOT NULL,
             target_id INTEGER NOT NULL,
@@ -586,7 +616,7 @@ def verify_register_otp():
             session['username'] = username 
             print(f"สมัครสมาชิกใหม่สำเร็จ (OTP): {username}")
             return redirect(url_for('home'))
-        except sqlite3.IntegrityError:
+        except psycopg2.IntegrityError:
             conn.close()
             return render_template('register.html', error="เกิดข้อผิดพลาด ชื่อผู้ใช้หรืออีเมลนี้ถูกใช้ไปแล้ว")
     else:
@@ -883,7 +913,7 @@ def submit_vote():
             VALUES (?, ?, ?, ?)
         ''', (session['username'], target_type, target_id, vote))
         conn.commit()
-    except sqlite3.IntegrityError:
+    except psycopg2.IntegrityError:
         return jsonify({"success": False, "message": "คุณได้ทำการโหวตรายการนี้ไปแล้ว"})
     except Exception as e:
         print(f"Error submitting vote: {e}")
