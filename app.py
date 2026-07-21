@@ -721,7 +721,7 @@ def detect_trash():
             
         # Use Gemini API
         img = Image.open(io.BytesIO(file_content))
-        model = genai.GenerativeModel("gemini-1.5-flash-latest")
+        model = genai.GenerativeModel("gemini-pro-vision")
         
         prompt = """
         Analyze this image and detect if there is any trash/waste.
