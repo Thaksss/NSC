@@ -359,9 +359,9 @@ def report():
 @app.route('/clear')
 def clear():
     conn = get_db_connection()
-    reports = conn.execute('SELECT * FROM pollution_reports WHERE status = "approved"').fetchall()
+    reports = conn.execute("SELECT * FROM pollution_reports WHERE status = 'approved'").fetchall()
     
-    pending_clears = conn.execute('SELECT report_id FROM cleared_reports WHERE status = "pending"').fetchall()
+    pending_clears = conn.execute('SELECT report_id FROM cleared_reports WHERE status = 'pending'').fetchall()
     pending_ids = [r['report_id'] for r in pending_clears]
     
     conn.close()
@@ -875,13 +875,13 @@ def confirm_page():
     username = session['username']
     conn = get_db_connection()
     
-    all_reports = conn.execute('SELECT * FROM pollution_reports WHERE status = "pending"').fetchall()
+    all_reports = conn.execute("SELECT * FROM pollution_reports WHERE status = 'pending'").fetchall()
     
     all_clears = conn.execute('''
         SELECT c.*, p.lat, p.lng 
         FROM cleared_reports c
         JOIN pollution_reports p ON c.report_id = p.id
-        WHERE c.status = "pending"
+        WHERE c.status = 'pending'
     ''').fetchall()
 
     user_votes = conn.execute('SELECT target_type, target_id FROM votes WHERE username = ?', (username,)).fetchall()
@@ -931,8 +931,8 @@ def admin_reports():
         return redirect(url_for('home'))
         
     conn = get_db_connection()
-    reports = conn.execute('SELECT * FROM pollution_reports WHERE status = "pending" ORDER BY created_at DESC').fetchall()
-    cleared_reports = conn.execute('SELECT * FROM cleared_reports WHERE status = "pending" ORDER BY created_at DESC').fetchall()
+    reports = conn.execute("SELECT * FROM pollution_reports WHERE status = 'pending' ORDER BY created_at DESC").fetchall()
+    cleared_reports = conn.execute("SELECT * FROM cleared_reports WHERE status = 'pending' ORDER BY created_at DESC").fetchall()
     
     vote_rows = conn.execute('SELECT target_type, target_id, vote, COUNT(*) as count FROM votes GROUP BY target_type, target_id, vote').fetchall()
     conn.close()
@@ -959,7 +959,7 @@ def approve_report(report_id):
         conn = get_db_connection()
         report = conn.execute('SELECT * FROM pollution_reports WHERE id = ?', (report_id,)).fetchone()
         if report and report['status'] == 'pending':
-            conn.execute('UPDATE pollution_reports SET status = "approved" WHERE id = ?', (report_id,))
+            conn.execute("UPDATE pollution_reports SET status = 'approved' WHERE id = ?", (report_id,))
             conn.execute('UPDATE users SET score = score + 2 WHERE username = ?', (report['username'],))
             conn.commit()
     except Exception as e:
@@ -975,7 +975,7 @@ def reject_report(report_id):
         
     try:
         conn = get_db_connection()
-        conn.execute('UPDATE pollution_reports SET status = "rejected" WHERE id = ?', (report_id,))
+        conn.execute("UPDATE pollution_reports SET status = 'rejected' WHERE id = ?", (report_id,))
         conn.commit()
     except Exception as e:
         print(f"Error rejecting report: {e}")
@@ -992,8 +992,8 @@ def approve_clear(clear_id):
         conn = get_db_connection()
         clear_report = conn.execute('SELECT * FROM cleared_reports WHERE id = ?', (clear_id,)).fetchone()
         if clear_report and clear_report['status'] == 'pending':
-            conn.execute('UPDATE cleared_reports SET status = "approved" WHERE id = ?', (clear_id,))
-            conn.execute('UPDATE pollution_reports SET status = "cleared" WHERE id = ?', (clear_report['report_id'],))
+            conn.execute("UPDATE cleared_reports SET status = 'approved' WHERE id = ?", (clear_id,))
+            conn.execute("UPDATE pollution_reports SET status = 'cleared' WHERE id = ?", (clear_report['report_id'],))
             conn.execute('UPDATE users SET score = score + 5 WHERE username = ?', (clear_report['username'],))
             conn.commit()
     except Exception as e:
@@ -1009,7 +1009,7 @@ def reject_clear(clear_id):
         
     try:
         conn = get_db_connection()
-        conn.execute('UPDATE cleared_reports SET status = "rejected" WHERE id = ?', (clear_id,))
+        conn.execute("UPDATE cleared_reports SET status = 'rejected' WHERE id = ?", (clear_id,))
         conn.commit()
     except Exception as e:
         print(f"Error rejecting clear: {e}")
