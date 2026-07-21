@@ -746,7 +746,18 @@ def detect_trash():
         response = requests.post(url, json=payload)
         
         if response.status_code != 200:
-            raise Exception(f"API Error {response.status_code}: {response.text}")
+            error_text = response.text
+            if response.status_code == 404:
+                # Fetch available models for debugging
+                list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={GEMINI_API_KEY}"
+                try:
+                    list_res = requests.get(list_url)
+                    if list_res.status_code == 200:
+                        models = [m['name'] for m in list_res.json().get('models', [])]
+                        error_text += f" | Available Models: {', '.join(models)}"
+                except:
+                    pass
+            raise Exception(f"API Error {response.status_code}: {error_text}")
             
         result_json = response.json()
         
