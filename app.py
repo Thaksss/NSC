@@ -1,8 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import requests
 import sqlite3
-import cv2
-import numpy as np
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
