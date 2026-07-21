@@ -16,15 +16,10 @@ from email_validator import validate_email, EmailNotValidError
 app = Flask(__name__)
 app.secret_key = 'blueheart_secret_key_encryption'
 
-import google.generativeai as genai
-from PIL import Image
 import io
 import json
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
 
 WASTE_CLASSES = list(range(12))
 
@@ -719,9 +714,10 @@ def detect_trash():
                 "message": "Gemini API Key is not set in Environment Variables."
             })
             
-        # Use Gemini API
-        img = Image.open(io.BytesIO(file_content))
-        model = genai.GenerativeModel("gemini-pro-vision")
+        # Use Gemini REST API
+        import base64
+        
+        base64_img = base64.b64encode(file_content).decode('utf-8')
         
         prompt = """
         Analyze this image and detect if there is any trash/waste.
@@ -731,9 +727,34 @@ def detect_trash():
         If no trash is found, return {"total_pieces": 0, "items": []}
         """
         
-        response = model.generate_content([prompt, img])
-        text = response.text
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
         
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"text": prompt},
+                    {
+                        "inline_data": {
+                            "mime_type": "image/jpeg",
+                            "data": base64_img
+                        }
+                    }
+                ]
+            }]
+        }
+        
+        response = requests.post(url, json=payload)
+        
+        if response.status_code != 200:
+            raise Exception(f"API Error {response.status_code}: {response.text}")
+            
+        result_json = response.json()
+        
+        try:
+            text = result_json['candidates'][0]['content']['parts'][0]['text']
+        except (KeyError, IndexError) as e:
+            raise Exception("Unexpected response structure from Gemini API")
+            
         # Clean up markdown formatting if present
         text = text.strip()
         if text.startswith("```json"):
