@@ -14,6 +14,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email_validator import validate_email, EmailNotValidError
+from datetime import datetime, date
 app = Flask(__name__)
 app.secret_key = 'blueheart_secret_key_encryption'
 
@@ -166,6 +167,132 @@ try:
     init_db()
 except Exception as e:
     print(f"CRITICAL ERROR in init_db: {e}")
+
+# ==========================================
+# DAILY QUESTS DEFINITION
+# ==========================================
+QUEST_LIST = {
+    1: {"name": "นักสำรวจฝึกหัด", "desc": "รายงานมลพิษ 1 จุด", "type": "report", "req": 1, "points": 10},
+    2: {"name": "นักสำรวจตัวยง", "desc": "รายงานมลพิษ 2 จุด", "type": "report", "req": 2, "points": 10},
+    3: {"name": "ตาเหยี่ยว", "desc": "รายงานมลพิษ 3 จุด", "type": "report", "req": 3, "points": 10},
+    4: {"name": "ผู้พิทักษ์แสงแรก", "desc": "รายงานมลพิษ 1 จุดในช่วงเช้า (06:00-12:00)", "type": "report_morning", "req": 1, "points": 10},
+    5: {"name": "ผู้พิทักษ์ยามบ่าย", "desc": "รายงานมลพิษ 1 จุดในช่วงบ่าย (12:00-18:00)", "type": "report_afternoon", "req": 1, "points": 10},
+    6: {"name": "เริ่มลงมือ", "desc": "เคลียร์มลพิษ 1 จุด", "type": "clear", "req": 1, "points": 10},
+    7: {"name": "ฮีโร่ตัวจริง", "desc": "เคลียร์มลพิษ 2 จุด", "type": "clear", "req": 2, "points": 10},
+    8: {"name": "สุดยอดคนขยัน", "desc": "เคลียร์มลพิษ 3 จุด", "type": "clear", "req": 3, "points": 10},
+    9: {"name": "เคลียร์ด่วน", "desc": "เคลียร์มลพิษ 1 จุดในช่วงเช้า (06:00-12:00)", "type": "clear_morning", "req": 1, "points": 10},
+    10: {"name": "ผู้ช่วยตรวจสอบ", "desc": "โหวตยืนยันมลพิษ 1 ครั้ง", "type": "vote", "req": 1, "points": 10},
+    11: {"name": "คณะกรรมการ", "desc": "โหวตยืนยันมลพิษ 3 ครั้ง", "type": "vote", "req": 3, "points": 10},
+    12: {"name": "ผู้คุมกฎ", "desc": "โหวตยืนยันมลพิษ 5 ครั้ง", "type": "vote", "req": 5, "points": 10},
+    13: {"name": "ศาลสูงสุด", "desc": "โหวตยืนยันมลพิษ 7 ครั้ง", "type": "vote", "req": 7, "points": 10},
+    14: {"name": "ผู้เชี่ยวชาญ", "desc": "โหวตยืนยันมลพิษ 10 ครั้ง", "type": "vote", "req": 10, "points": 10},
+    15: {"name": "นกตื่นเช้า", "desc": "เข้าสู่ระบบในช่วงเช้า (06:00-10:00)", "type": "login_morning", "req": 1, "points": 10},
+    16: {"name": "พักเบรกพิทักษ์โลก", "desc": "เข้าสู่ระบบในช่วงเที่ยง (11:00-13:00)", "type": "login_noon", "req": 1, "points": 10},
+    17: {"name": "ผู้พิทักษ์ยามวิกาล", "desc": "เข้าสู่ระบบในช่วงกลางคืน (20:00-00:00)", "type": "login_night", "req": 1, "points": 10},
+    18: {"name": "นักโหวตมือฉมัง", "desc": "โหวตยืนยันมลพิษ 4 ครั้ง", "type": "vote", "req": 4, "points": 10},
+    19: {"name": "ผู้ดูแลสม่ำเสมอ", "desc": "เข้าสู่ระบบ", "type": "login", "req": 1, "points": 10},
+    20: {"name": "กระตือรือร้น", "desc": "เข้าสู่ระบบในช่วงเย็น (16:00-20:00)", "type": "login_evening", "req": 1, "points": 10}
+}
+
+def assign_daily_quests(username):
+    conn = get_db_connection()
+    today = date.today()
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        # Check if quests exist for today
+        cur.execute("SELECT id FROM daily_quests WHERE username = %s AND date = %s", (username, today))
+        existing = cur.fetchone()
+        
+        if not existing:
+            # Delete old quests for this user
+            cur.execute("DELETE FROM daily_quests WHERE username = %s", (username,))
+            
+            # Assign 2 random new quests
+            quest_ids = random.sample(list(QUEST_LIST.keys()), 2)
+            cur.execute(
+                "INSERT INTO daily_quests (username, date, quest1_id, quest2_id) VALUES (%s, %s, %s, %s)",
+                (username, today, quest_ids[0], quest_ids[1])
+            )
+            conn.commit()
+    except Exception as e:
+        print(f"Error in assign_daily_quests: {e}")
+    finally:
+        conn.close()
+
+def update_quest_progress(username, action_type):
+    conn = get_db_connection()
+    today = date.today()
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT * FROM daily_quests WHERE username = %s AND date = %s", (username, today))
+        quest_data = cur.fetchone()
+        
+        if quest_data:
+            q1_id = quest_data['quest1_id']
+            q2_id = quest_data['quest2_id']
+            q1_info = QUEST_LIST[q1_id]
+            q2_info = QUEST_LIST[q2_id]
+            
+            updated = False
+            
+            # Check quest 1
+            if not quest_data['quest1_completed'] and q1_info['type'] == action_type:
+                new_prog = quest_data['quest1_progress'] + 1
+                if new_prog >= q1_info['req']:
+                    # Complete quest 1
+                    cur.execute("UPDATE daily_quests SET quest1_progress = %s, quest1_completed = TRUE WHERE id = %s", (new_prog, quest_data['id']))
+                    cur.execute("UPDATE users SET score = score + %s WHERE username = %s", (q1_info['points'], username))
+                else:
+                    cur.execute("UPDATE daily_quests SET quest1_progress = %s WHERE id = %s", (new_prog, quest_data['id']))
+                updated = True
+                
+            # Check quest 2
+            if not quest_data['quest2_completed'] and q2_info['type'] == action_type:
+                new_prog = quest_data['quest2_progress'] + 1
+                if new_prog >= q2_info['req']:
+                    # Complete quest 2
+                    cur.execute("UPDATE daily_quests SET quest2_progress = %s, quest2_completed = TRUE WHERE id = %s", (new_prog, quest_data['id']))
+                    cur.execute("UPDATE users SET score = score + %s WHERE username = %s", (q2_info['points'], username))
+                else:
+                    cur.execute("UPDATE daily_quests SET quest2_progress = %s WHERE id = %s", (new_prog, quest_data['id']))
+                updated = True
+                
+            if updated:
+                conn.commit()
+    except Exception as e:
+        print(f"Error in update_quest_progress: {e}")
+    finally:
+        conn.close()
+
+def check_login_quests(username):
+    update_quest_progress(username, 'login')
+    hour = datetime.now().hour
+    if 6 <= hour < 10:
+        update_quest_progress(username, 'login_morning')
+    elif 11 <= hour < 13:
+        update_quest_progress(username, 'login_noon')
+    elif 16 <= hour < 20:
+        update_quest_progress(username, 'login_evening')
+    elif 20 <= hour <= 23 or 0 <= hour < 2:
+        update_quest_progress(username, 'login_night')
+
+def check_report_quests(username):
+    update_quest_progress(username, 'report')
+    hour = datetime.now().hour
+    if 6 <= hour < 12:
+        update_quest_progress(username, 'report_morning')
+    elif 12 <= hour < 18:
+        update_quest_progress(username, 'report_afternoon')
+
+def check_clear_quests(username):
+    update_quest_progress(username, 'clear')
+    hour = datetime.now().hour
+    if 6 <= hour < 12:
+        update_quest_progress(username, 'clear_morning')
+
+def check_vote_quests(username):
+    update_quest_progress(username, 'vote')
+
 def get_water_quality_records():
     global WATER_QUALITY_CACHE, LAST_CACHE_TIME
     
@@ -302,7 +429,7 @@ def piautihighlign():
 @app.route('/game')
 def game():
     conn = get_db_connection()
-    top_users = conn.execute('SELECT username, score, rank FROM users ORDER BY score DESC LIMIT 10').fetchall()
+    top_users = conn.execute('SELECT username, score, rank, profile_image FROM users ORDER BY score DESC LIMIT 10').fetchall()
     conn.close()
     return render_template('game.html', leaderboard=top_users)
 
@@ -311,18 +438,43 @@ def ingame():
     if not session.get('username'):
         return redirect(url_for('login'))
         
+    username = session['username']
+    assign_daily_quests(username)
+    
     conn = get_db_connection()
-    user = conn.execute('SELECT * FROM users WHERE username = ?', (session['username'],)).fetchone()
+    user = conn.execute('SELECT * FROM users WHERE username = %s', (username,)).fetchone()
+    
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("SELECT * FROM daily_quests WHERE username = %s AND date = %s", (username, date.today()))
+    daily_quests = cur.fetchone()
     conn.close()
+    
+    quests_data = []
+    if daily_quests:
+        q1_info = QUEST_LIST.get(daily_quests['quest1_id'])
+        q2_info = QUEST_LIST.get(daily_quests['quest2_id'])
+        if q1_info:
+            quests_data.append({
+                'info': q1_info,
+                'progress': daily_quests['quest1_progress'],
+                'completed': daily_quests['quest1_completed']
+            })
+        if q2_info:
+            quests_data.append({
+                'info': q2_info,
+                'progress': daily_quests['quest2_progress'],
+                'completed': daily_quests['quest2_completed']
+            })
     
     if user:
         score = user['score'] if user['score'] is not None else 0
         rank = user['rank'] if user['rank'] is not None else "หยาดน้ำทะเล"
+        profile_image = user['profile_image'] if 'profile_image' in user.keys() and user['profile_image'] else "default_profile.png"
+        return render_template('ingame.html', username=user['username'], score=score, rank=rank, quests=quests_data, profile_image=profile_image)
     else:
         score = 0
         rank = "หยาดน้ำทะเล"
-        
-    return render_template('ingame.html', username=session['username'], score=score, rank=rank)
+        return render_template('ingame.html', username=session['username'], score=score, rank=rank, quests=quests_data, profile_image="default_profile.png")
 
 @app.route('/history')
 def history():
@@ -432,7 +584,8 @@ def submit_clear_report():
     finally:
         conn.close()
         
-    return jsonify({"success": True, "message": "ส่งข้อมูลการเคลียร์มลพิษสำเร็จ รอแอดมินตรวจสอบ"})
+    check_clear_quests(session['username'])
+    return jsonify({"success": True, "message": "ส่งข้อมูลการเคลียร์มลพิษเรียบร้อย รอแอดมินตรวจสอบ"})
 
 def send_otp_email(to_email, otp):
     EMAIL_ADDRESS = "heartblue172@gmail.com" 
@@ -537,6 +690,7 @@ def login():
         
         if user and check_password_hash(user['password'], password_input):
             session['username'] = user['username']
+            check_login_quests(user['username'])
             
             if user['username'] == 'Thak' and user['email'] == 'skillrodchan@gmail.com':
                 conn_admin = get_db_connection()
@@ -865,6 +1019,7 @@ def submit_pollution_report():
     finally:
         conn.close()
         
+    check_report_quests(session['username'])
     return jsonify({"success": True, "message": "ส่งรายงานสำเร็จ อยู่ในขั้นตอนหลังบ้านตรวจ"})
 
 @app.route('/confirm')
@@ -923,7 +1078,8 @@ def submit_vote():
     finally:
         conn.close()
         
-    return jsonify({"success": True, "message": "บันทึกผลโหวตสำเร็จ!"})
+    check_vote_quests(session['username'])
+    return jsonify({"success": True, "message": "โหวตสำเร็จ"})
 
 @app.route('/admin/reports')
 def admin_reports():
@@ -1016,6 +1172,60 @@ def reject_clear(clear_id):
     finally:
         conn.close()
     return redirect(url_for('admin_reports'))
+
+@app.route('/update_profile', methods=['POST'])
+def update_profile():
+    if 'username' not in session:
+        return jsonify({"success": False, "message": "กรุณาเข้าสู่ระบบก่อน"}), 401
+        
+    old_username = session['username']
+    new_username = request.form.get('username')
+    image_file = request.files.get('profile_image')
+    
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        # Check if new username is available
+        if new_username and new_username != old_username:
+            cur.execute("SELECT id FROM users WHERE username = %s", (new_username,))
+            if cur.fetchone():
+                return jsonify({"success": False, "message": "ชื่อผู้ใช้นี้มีคนใช้แล้ว"}), 400
+                
+        # Handle image upload
+        image_filename = None
+        if image_file and image_file.filename != '':
+            upload_dir = os.path.join(app.root_path, 'static', 'uploads', 'profiles')
+            os.makedirs(upload_dir, exist_ok=True)
+            ext = os.path.splitext(image_file.filename)[1]
+            if ext == '':
+                ext = '.jpg'
+            image_filename = f"profile_{uuid.uuid4().hex}{ext}"
+            image_file.save(os.path.join(upload_dir, image_filename))
+            
+        # Update Database
+        if new_username and new_username != old_username:
+            # Update username in all related tables
+            cur.execute("UPDATE users SET username = %s WHERE username = %s", (new_username, old_username))
+            cur.execute("UPDATE pollution_reports SET username = %s WHERE username = %s", (new_username, old_username))
+            cur.execute("UPDATE cleared_reports SET username = %s WHERE username = %s", (new_username, old_username))
+            cur.execute("UPDATE pinned_locations SET username = %s WHERE username = %s", (new_username, old_username))
+            cur.execute("UPDATE reviews SET username = %s WHERE username = %s", (new_username, old_username))
+            cur.execute("UPDATE votes SET username = %s WHERE username = %s", (new_username, old_username))
+            cur.execute("UPDATE daily_quests SET username = %s WHERE username = %s", (new_username, old_username))
+            session['username'] = new_username
+            
+        if image_filename:
+            cur.execute("UPDATE users SET profile_image = %s WHERE username = %s", (image_filename, session['username']))
+            
+        conn.commit()
+        return jsonify({"success": True, "message": "อัปเดตโปรไฟล์สำเร็จ!"})
+    except Exception as e:
+        print(f"Error updating profile: {e}")
+        conn.rollback()
+        return jsonify({"success": False, "message": "เกิดข้อผิดพลาดในการอัปเดต"}), 500
+    finally:
+        conn.close()
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)

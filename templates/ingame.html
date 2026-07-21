@@ -136,6 +136,13 @@
             justify-content: center;
             align-items: center;
             color: #ccc;
+            cursor: pointer;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .user-icon:hover {
+            transform: scale(1.05);
         }
 
         .user-info {
@@ -170,6 +177,53 @@
             font-weight: 400;
             font-size: 0.95rem;
             color: #fff;
+        }
+
+        .daily-quests {
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 15px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .daily-quests h3 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            margin-top: 0;
+        }
+        .quest-item {
+            background-color: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .quest-item.completed {
+            background-color: #d1d8e0;
+            opacity: 0.9;
+        }
+        .quest-info h4 {
+            margin: 0 0 5px 0;
+            color: #2c3e50;
+            font-size: 1rem;
+        }
+        .quest-info p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+        .quest-progress {
+            font-weight: bold;
+            color: #e67e22;
+            font-size: 1.1rem;
+        }
+        .quest-item.completed .quest-progress {
+            color: #27ae60;
         }
 
         .left-buttons {
@@ -371,8 +425,12 @@
         <div class="ingame-content">
             <div class="left-panel">
                 <div class="user-card">
-                    <div class="user-icon">
-                        <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <div class="user-icon" onclick="openProfileModal()" title="คลิกเพื่อแก้ไขโปรไฟล์">
+                        {% if profile_image and profile_image != 'default_profile.png' %}
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + profile_image) }}" style="width:100%; height:100%; object-fit:cover;">
+                        {% else %}
+                            <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        {% endif %}
                     </div>
                     <div class="user-info">
                         <div class="user-name">{{ username }}</div>
@@ -382,6 +440,26 @@
                         </div>
                     </div>
                 </div>
+                {% if quests %}
+                <div class="daily-quests">
+                    <h3>ภารกิจประจำวัน</h3>
+                    {% for quest in quests %}
+                    <div class="quest-item {% if quest.completed %}completed{% endif %}">
+                        <div class="quest-info">
+                            <h4>{{ quest.info.name }}</h4>
+                            <p>{{ quest.info.desc }}</p>
+                        </div>
+                        <div class="quest-progress">
+                            {% if quest.completed %}
+                                <span>สำเร็จแล้ว</span>
+                            {% else %}
+                                <span>{{ quest.progress }} / {{ quest.info.req }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
                 <a href="/history" class="btn-profile" style="margin-top: 10px;">ประวัติภารกิจ</a>
             </div>
             <div class="right-panel">
@@ -392,7 +470,60 @@
         </div>
     </div>
 
+    <div id="profileModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center; backdrop-filter: blur(5px);">
+        <div style="background:white; padding:30px; border-radius:20px; width:90%; max-width:400px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <h3 style="margin-top:0; margin-bottom:20px; text-align:center; color:#2c3e50;">แก้ไขโปรไฟล์</h3>
+            <form id="profileForm">
+                <div style="margin-bottom:15px;">
+                    <label style="font-weight:600; color:#34495e;">เปลี่ยนรูปโปรไฟล์:</label><br>
+                    <input type="file" name="profile_image" accept="image/*" style="margin-top:5px;">
+                </div>
+                <div style="margin-bottom:25px;">
+                    <label style="font-weight:600; color:#34495e;">ชื่อผู้ใช้ใหม่:</label><br>
+                    <input type="text" name="username" value="{{ username }}" required style="width:100%; padding:12px; border-radius:10px; border:1px solid #bdc3c7; margin-top:5px; font-size:1rem;">
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:15px;">
+                    <button type="button" onclick="document.getElementById('profileModal').style.display='none'" style="flex:1; padding:12px; background:#e74c3c; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:600; font-size:1rem;">ยกเลิก</button>
+                    <button type="submit" style="flex:1; padding:12px; background:#3498db; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:600; font-size:1rem;">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        function openProfileModal() {
+            document.getElementById('profileModal').style.display = 'flex';
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = 'กำลังบันทึก...';
+            submitBtn.disabled = true;
+
+            fetch('/update_profile', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                    submitBtn.innerHTML = 'บันทึก';
+                    submitBtn.disabled = false;
+                }
+            })
+            .catch(err => {
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อระบบ');
+                submitBtn.innerHTML = 'บันทึก';
+                submitBtn.disabled = false;
+            });
+        });
+
         document.addEventListener('DOMContentLoaded', function() {
             if (!document.querySelector('.hamburger')) {
                 const nav = document.querySelector('.navbar');
