@@ -53,13 +53,10 @@ class PostgresConnection:
     def close(self):
         self.conn.close()
 
+DEFAULT_DB_URL = "postgresql://postgres:0800977581Thak.@db.byldkndfngdgcrazqyyx.supabase.co:5432/postgres"
+
 def get_db_connection():
-    db_url = os.environ.get("DATABASE_URL")
-    if not db_url:
-        print("WARNING: DATABASE_URL is not set!")
-        # Fallback to local postgres if needed, but we should fail gracefully
-        pass
-    
+    db_url = os.environ.get("DATABASE_URL") or DEFAULT_DB_URL
     conn = psycopg2.connect(db_url)
     return PostgresConnection(conn)
 
