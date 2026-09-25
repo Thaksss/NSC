@@ -1,298 +1,325 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="landing">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>มลพิษทางทะเล</title>
-    
+    <title>Blueheart — มลพิษทางทะเล</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
-    <style>
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            gap: 4px;
-            cursor: pointer;
-            z-index: 2000;
-        }
-        .hamburger span {
-            display: block;
-            width: 25px;
-            height: 3px;
-            background-color: #333;
-            transition: all 0.3s;
-        }
-        @media (max-width: 768px) {
-            .hamburger {
-                display: flex;
-            }
-            .nav-links {
-                display: flex !important;
-                position: fixed;
-                top: 0;
-                right: -250px;
-                width: 250px;
-                height: 100vh;
-                background-color: #ffffff;
-                flex-direction: column !important;
-                padding-top: 70px;
-                padding-left: 20px;
-                padding-right: 20px;
-                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-                transition: right 0.3s ease;
-                z-index: 1500;
-                align-items: flex-start !important;
-                gap: 15px !important;
-                overflow-y: auto;
-            }
-            .nav-links.active {
-                right: 0;
-            }
-            .nav-links a {
-                color: #333 !important;
-                text-shadow: none !important;
-                margin-left: 0 !important;
-                width: 100%;
-                text-align: left;
-                padding: 5px 0;
-            }
-            .nav-links .btn-highlight,
-            .nav-links .btn-logout {
-                color: #ffffff !important;
-                text-align: center;
-                width: 100%;
-                padding: 10px 15px;
-                border-radius: 20px;
-            }
-            .nav-links form {
-                margin-left: 0 !important;
-                width: 100%;
-            }
-            .nav-links form button {
-                width: 100% !important;
-                margin-left: 0 !important;
-                margin-top: 5px;
-            }
-            .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
-            .hamburger.active span:nth-child(2) { opacity: 0; }
-            .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
-        }
-    </style>
-
-
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}">
 </head>
 
 <body>
-             
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Kanit', sans-serif;
-        }
 
-        body, html {
-            height: 100%;
-            width: 100%;
-            background-color: #0b1d28; 
-            overflow: hidden;
-        }
-
-        .hero {
-            height: 100vh;
-            width: 100%;
-            position: relative;
-            background-image: url("{{ url_for('static', filename='img/beach_bg.jpg') }}");
-            background-repeat: no-repeat;
-            background-position: center center;
-            background-size: cover; 
-        }
-
-        .navbar {
-            background-color: transparent;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-        }
-        .navbar .logo {
-            color: #ffffff;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        .navbar .nav-links a {
-            color: rgba(255, 255, 255, 0.85);
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            transition: color 0.2s ease;
-        }
-        .navbar .nav-links a:hover {
-            color: #ffffff;
-        }
-        .navbar .nav-links .btn-highlight {
-            background-color: rgba(0, 119, 204, 0.8);
-            border: 1px solid rgba(0, 119, 204, 0.9);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            color: #ffffff;
-            text-shadow: none;
-            transition: all 0.2s ease;
-        }
-        .navbar .nav-links .btn-highlight:hover {
-            background-color: #0077cc;
-            border-color: #0077cc;
-            box-shadow: 0 0 12px rgba(0, 119, 204, 0.6);
-        }
-        .navbar .nav-links .btn-logout {
-            background-color: rgba(226, 109, 92, 0.8);
-            border: 1px solid rgba(226, 109, 92, 0.5);
-            color: #ffffff;
-            padding: 8px 16px;
-            border-radius: 20px;
-            text-shadow: none;
-            transition: all 0.2s ease;
-        }
-        .navbar .nav-links .btn-logout:hover {
-            background-color: #e26d5c;
-            border-color: #e26d5c;
-        }
-
-        .content {
-            position: absolute;
-            top: 53%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: white;
-            width: 90%;
-            max-width: 1000px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .content h1 {
-            font-size: 7.2rem;
-            font-weight: 600;
-            line-height: 1;
-            margin-bottom: 20px;
-            letter-spacing: 2px;
-            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), 
-                         0 12px 28px rgba(0, 0, 0, 0.25), 
-                         0 24px 60px rgba(0, 0, 0, 0.2);
-        }
-
-        .content p {
-            font-size: 1.15rem;
-            font-weight: 300;
-            text-transform: uppercase;
-            letter-spacing: 7px;
-            margin-bottom: 45px;
-            color: rgba(255, 255, 255, 0.85);
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-        }
-
-        .btn-main-login {
-            display: inline-block;
-            text-decoration: none;
-            font-size: 1.15rem;
-            font-weight: 500;
-            letter-spacing: 1px;
-            color: #ffffff;
-            background: rgba(255, 255, 255, 0.12);
-            padding: 14px 48px;
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-
-        .btn-main-login:hover {
-            background: #ffffff;
-            color: #0b1d28;
-            border-color: #ffffff;
-            transform: translateY(-3px);
-            box-shadow: 0 12px 40px rgba(255, 255, 255, 0.25),
-                        0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .btn-main-login:active {
-            transform: translateY(-1px);
-        }
-
-        @media (max-width: 768px) {
-            .content h1 {
-                font-size: 3.5rem;
-                letter-spacing: 1px;
-            }
-            .content p {
-                font-size: 0.8rem;
-                letter-spacing: 3px;
-                margin-bottom: 25px;
-            }
-            .btn-main-login {
-                font-size: 1rem;
-                padding: 10px 35px;
-            }
-        }
-    </style>
-
-    <div class="hero">
-        <nav class="navbar">
-            <a href="/" class="logo">Blue Heart</a>
-            <div class="nav-links">
-                <a href="/home">หน้าแรก</a>
-                <a href="/pdata">ข้อมูลย้อนหลัง</a>
-                {% if session.get('username') %}
-                    <a href="/pin">ปักหมุดสถานที่</a>
-                {% endif %}
-                
-                <a href="/game" class="btn-highlight">ภารกิจพิทักษ์รักษาทะเล</a>
-            {% if session.get('role') == 'admin' %}
-                <a href="/admin/reports" class="btn-highlight" style="background-color: #f39c12; margin-right: 10px;">ระบบจัดการ (Admin)</a>
+    <!-- ============ NAVBAR ============ -->
+    <nav class="navbar" id="navbar">
+        <a href="/" class="logo">Blueheart <span style="font-size:15px;">💙</span></a>
+        <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+        <div class="nav-links" id="navLinks">
+            <a href="/home">หน้าแรก</a>
+            <a href="/pdata">ข้อมูลย้อนหลัง</a>
+            {% if session.get('username') %}
+                <a href="/pin">ปักหมุดสถานที่</a>
             {% endif %}
-                
-                {% if session.get('username') %}
-                    <a href="/logout" class="btn-logout">ออกจากระบบ ({{ session['username'] }})</a>
-                {% else %}
-                    <a href="/login" class="btn-highlight">เข้าสู่ระบบ</a>
-                {% endif %}
-            </div>
-        </nav>
-
-        <div class="content">
-            <h1>Blue Heart</h1>
-            <p>let our sea clean for our planet</p>
-            
-            {% if not session.get('username') %}
-                <a href="/login" class="btn-main-login">เข้าสู่ระบบเพื่อเริ่มต้น</a>
+            <a href="/game" class="btn-highlight">ภารกิจพิทักษ์รักษาทะเล</a>
+            {% if session.get('role') == 'admin' %}
+                <a href="/admin/reports" class="btn-highlight" style="background-color: #f39c12;">ระบบจัดการ (Admin)</a>
+            {% endif %}
+            {% if session.get('username') %}
+                <a href="/logout" class="btn-logout">ออกจากระบบ ({{ session['username'] }})</a>
+            {% else %}
+                <a href="/login" class="btn-highlight">เข้าสู่ระบบ</a>
             {% endif %}
         </div>
+    </nav>
+
+    <!-- ============ HERO ============ -->
+    <div class="hero">
+        <div class="hero-bg" id="heroBg"></div>
+
+        <!-- floating bubbles -->
+        <span class="bubble" style="left:8%;  width:14px; height:14px; animation-duration:12s;   --sway:14px;"></span>
+        <span class="bubble big" style="left:18%; width:34px; height:34px; animation-duration:16s;   animation-delay:2s;   --sway:22px;"></span>
+        <span class="bubble" style="left:28%; width:10px; height:10px; animation-duration:11s;   animation-delay:4s;   --sway:10px;"></span>
+        <span class="bubble big" style="left:38%; width:52px; height:52px; animation-duration:19s;   animation-delay:1s;   --sway:30px;"></span>
+        <span class="bubble" style="left:47%; width:18px; height:18px; animation-duration:13s;   animation-delay:6s;   --sway:16px;"></span>
+        <span class="bubble" style="left:56%; width:26px; height:26px; animation-duration:15s;   animation-delay:3s;   --sway:20px;"></span>
+        <span class="bubble" style="left:64%; width:12px; height:12px; animation-duration:10s;   animation-delay:5s;   --sway:12px;"></span>
+        <span class="bubble big" style="left:72%; width:62px; height:62px; animation-duration:22s;   animation-delay:2.5s; --sway:34px;"></span>
+        <span class="bubble" style="left:82%; width:22px; height:22px; animation-duration:14s;   animation-delay:7s;   --sway:18px;"></span>
+        <span class="bubble" style="left:90%; width:16px; height:16px; animation-duration:12.5s; animation-delay:0.5s; --sway:14px;"></span>
+        <span class="bubble" style="left:50%; width:9px;  height:9px;  animation-duration:9s;    animation-delay:8s;   --sway:8px;"></span>
+        <span class="bubble big" style="left:12%; width:40px; height:40px; animation-duration:18s;   animation-delay:9s;   --sway:26px;"></span>
+
+        <div class="content">
+            <h1>Blueheart</h1>
+            <p>let our sea clean for our planet</p>
+            {% if not session.get('username') %}
+                <a href="/login" class="btn-main-login">เข้าสู่ระบบเพื่อเริ่มต้น</a>
+            {% else %}
+                <a href="/home" class="btn-main-login">เข้าสู่แผนที่ทะเลไทย</a>
+            {% endif %}
+        </div>
+
+        <div class="scroll-hint">
+            <span>เลื่อนลง</span>
+            <span class="arrow">⌄</span>
+        </div>
+
+        <!-- wave into white section -->
+        <svg class="wave-divider fill-white" style="position:absolute; bottom:0; left:0; z-index:3;" viewBox="0 0 1440 120" preserveAspectRatio="none">
+            <path d="M0,64 C240,110 480,20 720,48 C960,76 1200,110 1440,58 L1440,120 L0,120 Z"></path>
+        </svg>
     </div>
 
-    
+    <!-- ============ SECTION 1 : ปัญหา ============ -->
+    <section class="section section-white">
+        <div class="section-inner split">
+            <div class="text-col">
+                <div class="section-tag reveal">🌊 ปัญหาที่เราเจอ</div>
+                <h2 class="reveal d1">ทะเลที่เรารัก <span class="accent">กำลังเศร้า</span></h2>
+                <p class="lead reveal d2">
+                    ทุกปีมีขยะพลาสติกหลุดลงสู่ทะเลนับล้านตัน สัตว์ทะเลกลืนกินหรือติดกับดักพลาสติก
+                    ในขณะที่หลายชายหาดของไทยยังถูกจัดอยู่ในระดับน้ำทะเล "เสื่อมโทรม"
+                    ปัญหาใหญ่ที่สุดคือ — เรามักไม่รู้ว่ามลพิษอยู่ตรงไหน และไม่รู้ว่าจะเริ่มช่วยจากตรงไหน
+                </p>
+                <div class="stat-row">
+                    <div class="stat-card reveal d2">
+                        <div class="num">8 ล้านตัน</div>
+                        <div class="label">ขยะพลาสติกหลุดสู่มหาสมุทรต่อปีทั่วโลก</div>
+                    </div>
+                    <div class="stat-card reveal d3">
+                        <div class="num">100,000+</div>
+                        <div class="label">สัตว์ทะเลเสียชีวิตจากพลาสติกทุกปี</div>
+                    </div>
+                    <div class="stat-card reveal d4">
+                        <div class="num">ระดับเสื่อมโทรม</div>
+                        <div class="label">หลายพื้นที่ชายฝั่งไทยยังมีคุณภาพน้ำต่ำ</div>
+                    </div>
+                </div>
+            </div>
+            <div class="img-col reveal d2">
+                <div class="img-frame">
+                    <img src="{{ url_for('static', filename='img/marine_whale_plastic.jpg') }}" alt="วาฬและขยะพลาสติกในทะเล">
+                </div>
+                <div class="img-float-badge">🐋 มหาสมุทรไม่ควรมีพลาสติก</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SECTION 2 : ทำไมถึงสร้าง ============ -->
+    <div style="background:#ffffff;">
+        <svg class="wave-divider fill-tint" viewBox="0 0 1440 120" preserveAspectRatio="none">
+            <path d="M0,48 C260,100 520,10 780,42 C1040,74 1240,100 1440,52 L1440,120 L0,120 Z"></path>
+        </svg>
+    </div>
+    <section class="section section-tint">
+        <div class="section-inner split reverse">
+            <div class="text-col">
+                <div class="section-tag reveal">💙 ทำไมถึงสร้างเว็บนี้</div>
+                <h2 class="reveal d1">เพราะเราเชื่อว่า <span class="accent">ทุกคนช่วยทะเลได้</span></h2>
+                <div class="why-list">
+                    <div class="why-item reveal d1">
+                        <div class="ico">🏖️</div>
+                        <div>
+                            <h4>เห็นปัญหาตรงหน้า</h4>
+                            <p>ชายหาดที่เคยสวยงามกลับมีขยะกองสะสม แต่ข้อมูลเหล่านั้นกระจัดกระจายและเข้าถึงยาก</p>
+                        </div>
+                    </div>
+                    <div class="why-item reveal d2">
+                        <div class="ico">📊</div>
+                        <div>
+                            <h4>ข้อมูลควรเป็นของทุกคน</h4>
+                            <p>เรารวบรวมข้อมูลคุณภาพน้ำทะเลจริงจากหน่วยงาน มาแสดงบนแผนที่ที่อ่านง่าย ใช้ได้ทันที</p>
+                        </div>
+                    </div>
+                    <div class="why-item reveal d3">
+                        <div class="ico">🤝</div>
+                        <div>
+                            <h4>ชุมชนช่วยชุมชน</h4>
+                            <p>รายงานจุดมลพิษ เคลียร์ขยะจริง โหวตยืนยันกันเอง ให้การดูแลทะเลเป็นเรื่องสนุกและมีแรงใจ</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="img-col reveal d2">
+                <div class="img-frame tilt-right">
+                    <img src="{{ url_for('static', filename='img/marine_turquoise_cove.jpg') }}" alt="อ่าวทะเลสีฟ้าใส">
+                </div>
+                <div class="img-float-badge" style="right:auto; left:-12px;">🐠 ทะเลที่สะอาดคือหัวใจของเรา</div>
+            </div>
+        </div>
+    </section>
+    <svg class="wave-divider fill-white" style="background:#eef6f9;" viewBox="0 0 1440 120" preserveAspectRatio="none">
+        <path d="M0,60 C240,10 520,100 780,60 C1040,20 1240,60 1440,40 L1440,120 L0,120 Z"></path>
+    </svg>
+
+    <!-- ============ SECTION 3 : เว็บนี้ทำอะไรได้บ้าง ============ -->
+    <section class="section section-white" style="padding-top:60px;">
+        <div class="section-inner">
+            <div style="text-align:center;">
+                <div class="section-tag reveal">🧭 เว็บนี้ทำอะไรได้บ้าง</div>
+                <h2 class="reveal d1">ฟีเจอร์ที่ช่วยให้ <span class="accent">ทะเลกลับมาใส</span></h2>
+                <p class="lead reveal d2" style="margin:0 auto;">ครบทั้งดูข้อมูล รายงาน ลงมือทำ และสนุกไปด้วยกัน</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card reveal d1">
+                    <div class="feature-thumb" style="background-image:url('{{ url_for('static', filename='img/ocean_chart.jpg') }}');">
+                        <span class="emoji">🗺️</span>
+                    </div>
+                    <div class="feature-body">
+                        <h3>แผนที่คุณภาพน้ำทะเล</h3>
+                        <p>ดูค่า MWQI น้ำทะเลรายสถานีทั่วประเทศ แยกสีตามระดับคุณภาพ เข้าใจง่ายในคลิกเดียว</p>
+                    </div>
+                </div>
+                <div class="feature-card reveal d2">
+                    <div class="feature-thumb" style="background-image:url('{{ url_for('static', filename='img/ocean_pin.jpg') }}');">
+                        <span class="emoji">📍</span>
+                    </div>
+                    <div class="feature-body">
+                        <h3>ปักหมุดชายหาด</h3>
+                        <p>แชร์ชายหาดหรือจุดดำน้ำที่คุณรู้จัก พร้อมบันทึกคุณภาพน้ำ ให้คนอื่นวางใจก่อนไปเที่ยว</p>
+                    </div>
+                </div>
+                <div class="feature-card reveal d3">
+                    <div class="feature-thumb" style="background-image:url('{{ url_for('static', filename='img/marine_stormy_waves.jpg') }}');">
+                        <span class="emoji">📸</span>
+                    </div>
+                    <div class="feature-body">
+                        <h3>รายงานมลพิษ + AI</h3>
+                        <p>ถ่ายรูปจุดที่มีขยะ ให้ AI ช่วยนับจำนวนชิ้นและจัดประเภทขยะให้อัตโนมัติ</p>
+                    </div>
+                </div>
+                <div class="feature-card reveal d1">
+                    <div class="feature-thumb" style="background-image:url('{{ url_for('static', filename='img/marine_aerial_coast.jpg') }}');">
+                        <span class="emoji">🧹</span>
+                    </div>
+                    <div class="feature-body">
+                        <h3>ภารกิจเคลียร์ขยะ</h3>
+                        <p>เก็บขยะจริง ถ่ายภาพก่อน–หลังส่งเข้าระบบ รับคะแนนเมื่อชุมชนและแอดมินยืนยัน</p>
+                    </div>
+                </div>
+                <div class="feature-card reveal d2">
+                    <div class="feature-thumb" style="background-image:url('{{ url_for('static', filename='img/ocean_crystal.jpg') }}');">
+                        <span class="emoji">🎮</span>
+                    </div>
+                    <div class="feature-body">
+                        <h3>ภารกิจรายวัน &amp; แรงก์</h3>
+                        <p>รับภารกิจใหม่ทุกวัน สะสมแต้มเลื่อนระดับจาก "หยาดน้ำทะเล" ขึ้นไปถึง "เจ้าสมุทร"</p>
+                    </div>
+                </div>
+                <div class="feature-card reveal d3">
+                    <div class="feature-thumb" style="background-image:url('{{ url_for('static', filename='img/ocean_shield.jpg') }}');">
+                        <span class="emoji">✅</span>
+                    </div>
+                    <div class="feature-body">
+                        <h3>โหวตยืนยันร่วมกัน</h3>
+                        <p>ทุกรายงานถูกตรวจสอบโดยชุมชนก่อนขึ้นแผนที่ ทำให้ข้อมูลน่าเชื่อถือและโปร่งใส</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ WAVE STRIP → FOOTER ============ -->
+    <div class="wave-strip">
+        <svg class="w1" viewBox="0 0 2880 130" preserveAspectRatio="none">
+            <path d="M0,70 C240,120 480,20 720,60 C960,100 1200,30 1440,70 C1680,110 1920,25 2160,65 C2400,105 2640,35 2880,70 L2880,130 L0,130 Z"></path>
+        </svg>
+        <svg class="w2" viewBox="0 0 2880 130" preserveAspectRatio="none">
+            <path d="M0,90 C240,40 480,110 720,80 C960,50 1200,110 1440,85 C1680,60 1920,115 2160,90 C2400,65 2640,105 2880,85 L2880,130 L0,130 Z"></path>
+        </svg>
+    </div>
+
+    <!-- ============ FOOTER (สีไข่) ============ -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <a href="/" class="logo">Blueheart <span class="heart">💙</span></a>
+                    <p>let our sea clean for our planet — แพลตฟอร์มของคนรักทะเล ที่รวมข้อมูลคุณภาพน้ำ รายงานมลพิษ และภารกิจช่วยกันเก็บขยะไว้ในที่เดียว</p>
+                </div>
+                <div class="footer-contact">
+                    <h4>ช่องทางติดต่อ</h4>
+                    <div class="contact-list">
+                        <a class="contact-item" href="mailto:contact@blueheart.example">
+                            <span class="ico">📧</span> contact@blueheart.example
+                        </a>
+                        <a class="contact-item" href="#">
+                            <span class="ico">📸</span> IG : @blueheart.th
+                        </a>
+                        <a class="contact-item" href="#">
+                            <span class="ico">💬</span> LINE : @blueheart
+                        </a>
+                        <a class="contact-item" href="#">
+                            <span class="ico">📞</span> โทร. 0X-XXX-XXXX
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>© 2026 Blueheart — ทำด้วยรักและความใส่ใจต่อทะเลไทย 🌊</span>
+                <span class="mini-links">
+                    <a href="/home">แผนที่</a>
+                    <a href="/game">ภารกิจ</a>
+                    <a href="/pdata">ข้อมูล</a>
+                </span>
+            </div>
+        </div>
+    </footer>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (!document.querySelector('.hamburger')) {
-                const nav = document.querySelector('.navbar');
-                const navLinks = document.querySelector('.nav-links');
-                if (nav && navLinks) {
-                    const hamburger = document.createElement('div');
-                    hamburger.className = 'hamburger';
-                    hamburger.innerHTML = '<span></span><span></span><span></span>';
-                    nav.insertBefore(hamburger, navLinks);
-                    
-                    hamburger.addEventListener('click', function() {
-                        hamburger.classList.toggle('active');
-                        navLinks.classList.toggle('active');
-                    });
-                }
+        document.addEventListener('DOMContentLoaded', function () {
+            /* ----- hamburger menu ----- */
+            const hamburger = document.getElementById('hamburger');
+            const navLinks = document.getElementById('navLinks');
+            if (hamburger && navLinks) {
+                hamburger.addEventListener('click', function () {
+                    hamburger.classList.toggle('active');
+                    navLinks.classList.toggle('active');
+                });
             }
+
+            /* ----- navbar style on scroll + hero parallax ----- */
+            const navbar = document.getElementById('navbar');
+            const heroBg = document.getElementById('heroBg');
+            let ticking = false;
+
+            function onScroll() {
+                const y = window.scrollY || window.pageYOffset;
+                if (navbar) navbar.classList.toggle('scrolled', y > 40);
+                if (heroBg && y < window.innerHeight) {
+                    heroBg.style.transform = 'translateY(' + (y * 0.35) + 'px)';
+                }
+                ticking = false;
+            }
+            window.addEventListener('scroll', function () {
+                if (!ticking) {
+                    window.requestAnimationFrame(onScroll);
+                    ticking = true;
+                }
+            }, { passive: true });
+            onScroll();
+
+            /* ----- scroll reveal animations ----- */
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+            document.querySelectorAll('.reveal').forEach(function (el) {
+                observer.observe(el);
+            });
         });
     </script>
 
