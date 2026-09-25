@@ -1320,7 +1320,127 @@ def update_profile():
 WHALE_OFFTOPIC_REPLY = "ขออภัยครับ น้องวาฬสามารถตอบได้เฉพาะเรื่องราวเกี่ยวกับทะเล ขยะทะเล ค่าดัชนีมลพิษในเว็บ BlueHeart และวิธีการทำความสะอาดชายหาดเท่านั้นครับ 🌊🐋"
 WHALE_ERROR_REPLY = "ขออภัยครับ ตอนนี้น้องวาฬมีปัญหาในการเชื่อมต่อ ลองใหม่อีกครั้งนะครับ 🐋"
 
-WHALE_SYSTEM_PROMPT = '''คุณคือ "น้องวาฬ" (Nong Whale) ผู้ช่วย AI ตัวปลาวาฬ และมาสคอตของเว็บไซต์ BlueHeart (blueheart.onrender.com)
+# ------------------------------------------
+# 🏖️ สรุปข้อมูลความสะอาดน้ำทะเล (MWQi) รายจังหวัด
+# ใช้ให้น้องวาฬแนะนำสถานที่ท่องเที่ยวจากข้อมูลจริงใน cached_water_data.json
+# ------------------------------------------
+WHALE_PROVINCE_TAGS = {
+    "กระบี่": "อ่าวมหาลัง เกาะพีพี ไร่เลย์ เกาะห้อง เกาะไก่",
+    "ภูเก็ต": "หาดป่าตอง หาดกะตะ หาดกะรน แหลมพรหมเทพ หาดไม้ขาว",
+    "พังงา": "หาดเขาหลัก-ลำแก่น เกาะสิมิลัน เกาะพระทอง เกาะตะชัย",
+    "ระนอง": "เกาะพยาม เกาะคอกข้าง อ่าวปากน้ำระนอง เกาะสุรินทร์",
+    "สุราษฎร์ธานี": "เกาะสมุย เกาะพะงัน เกาะเต่า เกาะนางยวน",
+    "ตรัง": "หาดปากเมง หาดช้าง หาดยาว เกาะกะหมุด เกาะหมู่ เกาะลิบง",
+    "สตูล": "เกาะตะรุเตา เกาะหลีเป๊ะ เกาะบุโหลน อ่าวพงษ์ปัน",
+    "ชุมพร": "หาดทุ่งวัวแล่น เกาะมัตรา อ่าวชุมพร",
+    "นครศรีธรรมราช": "หาดเจ้าฟ้า ปากพนัง",
+    "สงขลา": "หาดสมิหลา หาดสำราญ อ่าวสงขลา",
+    "ปัตตานี": "หาดทรายรี",
+    "พัทลุง": "เขาอกทะลุ ทะเลน้อยชมนกอพยพ",
+    "นราธิวาส": "หาดนราทัศน์ อ่าวมะนาว",
+    "ชลบุรี": "พัทยา เกาะล้าน บางแสน เกาะสีชัง",
+    "ระยอง": "เกาะเสม็ด แหลมแม่พิมพ์ บ้านเพ",
+    "จันทบุรี": "หาดแหลมสิงห์ หาดเจ้าหลาว หาดคุ้งวิมาน",
+    "ตราด": "เกาะช้าง เกาะหมาก เกาะกูด หาดแหลมงอบ",
+    "เพชรบุรี": "หาดชะอำ เขายายนาง หาดเจ้าสำราญ",
+    "ประจวบคีรีขันธ์": "หัวหิน เขาตะเกียบ หาดปราณบุรี",
+    "สมุทรสงคราม": "หาดแหลมลือ วัดบางกะเจ้า ตลาดน้ำอัมพวา",
+    "สมุทรสาคร": "หาดสุนทร ตลาดน้ำลำพญา",
+    "สมุทรปราการ": "หาดบางพูด ศาลปู่เจ้าสมิงพราย เมืองโบราณ",
+}
+
+WHALE_TOURISM_SUMMARY_CACHE = None
+
+def build_whale_tourism_summary():
+    """สรุปค่า MWQi (soway_score) ต่อจังหวัดจาก cached_water_data.json
+    ใช้เฉพาะข้อมูลปีล่าสุดของแต่ละสถานีตรวจวัด เพื่อให้ค่าเป็นปัจจุบันที่สุด"""
+    global WHALE_TOURISM_SUMMARY_CACHE
+    if WHALE_TOURISM_SUMMARY_CACHE is not None:
+        return WHALE_TOURISM_SUMMARY_CACHE
+
+    cache_path = os.path.join(os.path.dirname(__file__), 'cached_water_data.json')
+    try:
+        with open(cache_path, 'r', encoding='utf-8') as f:
+            records = json.load(f)
+    except Exception as e:
+        print(f"Whale tourism summary: cannot load cache ({e})")
+        WHALE_TOURISM_SUMMARY_CACHE = []
+        return WHALE_TOURISM_SUMMARY_CACHE
+
+    # เก็บเฉพาะเรคคอร์ดล่าสุดของแต่ละสถานี (จังหวัด + ชื่อพื้นที่)
+    latest_per_station = {}
+    for row in records:
+        province = (row.get('province') or '').strip()
+        area = (row.get('area_name') or '').strip()
+        if not province or not area:
+            continue
+        key = (province, area)
+        date_str = row.get('date') or ''
+        prev = latest_per_station.get(key)
+        if prev is None or date_str > prev.get('date', ''):
+            latest_per_station[key] = row
+
+    # รวมเป็นรายจังหวัด
+    stats = {}
+    for (province, area), row in latest_per_station.items():
+        try:
+            score = float(row.get('soway_score'))
+        except (TypeError, ValueError):
+            score = None
+        cls = (row.get('soway_class') or '').strip()
+        item = stats.setdefault(province, {'count': 0, 'sum': 0.0, 'best_score': None, 'best_area': area, 'best_cls': cls})
+        item['count'] += 1
+        if score is not None:
+            item['sum'] += score
+            if item['best_score'] is None or score > item['best_score']:
+                item['best_score'] = score
+                item['best_area'] = area
+                item['best_cls'] = cls
+
+    provinces = []
+    for province, s in stats.items():
+        provinces.append({
+            'province': province,
+            'stations': s['count'],
+            'avg_mwqi': round(s['sum'] / s['count'], 1) if s['count'] else None,
+            'best_station': s['best_area'],
+            'best_mwqi': s['best_score'],
+            'best_class': s['best_cls'],
+        })
+
+    # เรียงจากจังหวัดที่จุดสะอาดที่สุดมีค่า MWQi สูงที่สุด
+    provinces.sort(key=lambda p: (-(p['best_mwqi'] if p['best_mwqi'] is not None else -1), p['province']))
+    WHALE_TOURISM_SUMMARY_CACHE = provinces
+    return provinces
+
+def whale_tourism_context():
+    """สร้างข้อความสรุปข้อมูล MWQi รายจังหวัด สำหรับแทรกใน system prompt ของน้องวาฬ"""
+    rows = build_whale_tourism_summary()
+    if not rows:
+        return "(ขณะนี้ไม่มีข้อมูล MWQi ให้ใช้ หากผู้ใช้ถามเรื่องความสะอาดของจังหวัด ให้บอกว่าขออภัยและแนะนำให้ดูหน้าข้อมูลคุณภาพน้ำทะเลของเว็บแทน)"
+    lines = []
+    for p in rows:
+        parts = [f"- {p['province']}:"]
+        if p['avg_mwqi'] is not None:
+            parts.append(f"MWQi เฉลี่ย {p['avg_mwqi']}")
+        if p['best_mwqi'] is not None:
+            parts.append(f"| จุดสะอาดที่สุด \"{p['best_station']}\" (MWQi {p['best_mwqi']:g}, ระดับ {p['best_class'] or 'ไม่ระบุ'})")
+        parts.append(f"| ({p['stations']} สถานีตรวจวัด)")
+        tag = WHALE_PROVINCE_TAGS.get(p['province'])
+        if tag:
+            parts.append(f"| ที่เที่ยวยอดนิยม: {tag}")
+        lines.append(" ".join(parts))
+    return "\n".join(lines)
+
+def build_whale_system_prompt():
+    """ประกอบ system prompt ของน้องวาฬ พร้อมข้อมูล MWQi รายจังหวัดล่าสุด"""
+    try:
+        return WHALE_SYSTEM_PROMPT_TEMPLATE.format(whale_tourism_data=whale_tourism_context())
+    except Exception as e:
+        print(f"Whale system prompt build error: {e}")
+        return WHALE_SYSTEM_PROMPT_TEMPLATE.replace('{whale_tourism_data}', '(ข้อมูลความสะอาดน้ำทะเลขณะนี้โหลดไม่ได้ ให้ตอบตามความรู้ทั่วไปและแนะนำให้ดูหน้าข้อมูลคุณภาพน้ำทะเลของเว็บ)')
+
+WHALE_SYSTEM_PROMPT_TEMPLATE = '''คุณคือ "น้องวาฬ" (Nong Whale) ผู้ช่วย AI ตัวปลาวาฬ และมาสคอตของเว็บไซต์ BlueHeart (blueheart.onrender.com)
 
 == บุคลิก ==
 - ปลาวาฬ AI ที่เป็นมิตร สุภาพ กระตือรือร้น ให้ความรู้ และเข้าใจง่าย
@@ -1344,7 +1464,7 @@ WHALE_SYSTEM_PROMPT = '''คุณคือ "น้องวาฬ" (Nong Whale)
 9. การย่อยสลายของพลาสติก
 10. ไมโครพลาสติก (Microplastics)
 11. ผลกระทบของขยะทะเลและพลาสติกต่อสิ่งแวดล้อม
-12. เรื่องอื่นที่เกี่ยวข้องโดยตรงกับทะเล มหาสมุทร ขยะทะเล มลพิษทางน้ำ และการอนุรักษ์สิ่งแวดล้อมทางทะเล
+12. เรื่องอื่นที่เกี่ยวข้องโดยตรงกับทะเล มหาสมุทร ขยะทะเล มลพิษทางน้ำ และการอนุรักษ์สิ่งแวดล้อมทางทะเล\n13. การแนะนำสถานที่ท่องเที่ยวชายทะเล/เกาะ ของแต่ละจังหวัดหรือทั่วประเทศ โดยอ้างอิงค่าความสะอาดน้ำทะเล (MWQi) จากข้อมูลจริงที่ให้ไว้ด้านล่าง
 
 == บทสนทนาเบื้องต้น ==
 ตอบการทักทายและคำถามสั้น ๆ ทั่วไปได้ เช่น สวัสดี สบายดีไหม ชื่ออะไร ทำอะไรได้บ้าง ขอบคุณ ลาก่อน
@@ -1352,7 +1472,7 @@ WHALE_SYSTEM_PROMPT = '''คุณคือ "น้องวาฬ" (Nong Whale)
 ห้ามขยายไปสนทนาเรื่องทั่วไปที่ไม่เกี่ยวกับ BlueHeart หรือทะเล
 
 == ข้อห้าม (เคร่งครัดมาก) ==
-หากคำถามอยู่นอกหัวข้อที่อนุญาตข้างต้น และไม่ใช่บทสนทนาเบื้องต้น ให้ตอบด้วยข้อความนี้เท่านั้น ห้ามเพิ่ม ห้ามแก้ไข ห้ามตอบสิ่งอื่น:
+ข้อยกเว้น: คำถามที่ขอให้แนะนำสถานที่ท่องเที่ยวทะเล/ชายหาด/เกาะ หรือถามว่าจังหวัดไหนน้ำทะเลสะอาด เป็นหัวข้อที่อนุญาต ให้ตอบโดยใช้ข้อมูลจากหัวข้อ "ข้อมูลความสะอาดน้ำทะเลรายจังหวัด (MWQi)" ด้านล่างเสมอ ห้ามเดาค่าเอง\nหากคำถามอยู่นอกหัวข้อที่อนุญาตข้างต้น และไม่ใช่บทสนทนาเบื้องต้น ให้ตอบด้วยข้อความนี้เท่านั้น ห้ามเพิ่ม ห้ามแก้ไข ห้ามตอบสิ่งอื่น:
 "ขออภัยครับ น้องวาฬสามารถตอบได้เฉพาะเรื่องราวเกี่ยวกับทะเล ขยะทะเล ค่าดัชนีมลพิษในเว็บ BlueHeart และวิธีการทำความสะอาดชายหาดเท่านั้นครับ 🌊🐋"
 ตัวอย่างหัวข้อที่ต้องปฏิเสธ: การเขียนโปรแกรม/เขียนโค้ด การบ้านที่ไม่เกี่ยวกับทะเล ข่าวทั่วไป การเมือง เกม กีฬา การลงทุน คำถามส่วนตัวทั่วไป บันเทิง และเรื่องอื่น ๆ ที่ไม่เกี่ยวข้องกับขอบเขตของน้องวาฬ
 ห้ามให้คำแนะนำเรื่องนอกขอบเขต ห้ามเปลี่ยนหัวข้อไปตอบเรื่องอื่น
@@ -1360,7 +1480,7 @@ WHALE_SYSTEM_PROMPT = '''คุณคือ "น้องวาฬ" (Nong Whale)
 == ข้อมูลเว็บไซต์ BlueHeart (ใช้ตอบคำถามเกี่ยวกับเว็บ) ==
 - BlueHeart ช่วยติดตามมลพิษทางทะเล: ผู้ใช้ "รายงานมลพิษ" (ถ่ายรูปจุดขยะ + AI นับจำนวนขยะในภาพ), "เคลียร์มลพิษ" (อัปโหลดรูปก่อน-หลังเก็บขยะเพื่อยืนยัน), "โหวตยืนยัน" รายงานของผู้ใช้อื่น, สะสมแต้มและแรงก์ (หยาดน้ำทะเล, คลื่นลูกใหม่, ผู้พิทักษ์ชายหาด, นักสู้แห่งท้องทะเล, เจ้าสมุทร) และทำภารกิจรายวัน
 - หน้าข้อมูลคุณภาพน้ำทะเลแสดงค่า: MWQi (Marine Water Quality Index = ดัชนีคุณภาพน้ำทะเล), DO (Dissolved Oxygen = ออกซิเจนละลายน้ำ, mg/L), TSS (Total Suspended Solids = ของแข็งแขวนลอย, mg/L), pH (ความเป็นกรด-เป็นด่างของน้ำ), Salinity (ความเค็มของน้ำทะเล, ppt)
-- ระดับคุณภาพน้ำทะเล (SOWAY Class): ดีมาก/ดี = น้ำสะอาดคุณภาพดี, พอใช้ = เริ่มมีมลพิษ, เสื่อมโทรม = มีมลพิษสูงต้องเร่งแก้ไข — บนแผนที่ใช้สี เขียว = ดี, เหลือง = พอใช้, แดง = เสื่อมโทรม'''
+- ระดับคุณภาพน้ำทะเล (SOWAY Class): ดีมาก/ดี = น้ำสะอาดคุณภาพดี, พอใช้ = เริ่มมีมลพิษ, เสื่อมโทรม = มีมลพิษสูงต้องเร่งแก้ไข — บนแผนที่ใช้สี เขียว = ดี, เหลือง = พอใช้, แดง = เสื่อมโทรม\n\n== การแนะนำสถานที่ท่องเที่ยวจากค่าความสะอาดน้ำทะเล (MWQi) ==\nเมื่อผู้ใช้ถามว่าควรไปเที่ยวทะเลจังหวัดไหน หรือจังหวัดไหนน้ำสะอาด ให้ใช้ข้อมูลด้านล่างนี้เป็นหลักเสมอ:\n- จัดอันดับ/แนะนำจากค่า MWQi จริง (0-100, ยิ่งสูงยิ่งสะอาด) ของแต่ละจังหวัด ห้ามเดาค่าเอง ห้ามแต่งข้อมูลจังหวัดที่ไม่มีในรายการ\n- จังหวัด MWQi สูง (ดีมาก/ดี) → แนะนำกิจกรรมน้ำใสได้เต็มที่ เช่น ว่ายน้ำ ดำน้ำ ดูปะการัง พร้อมยก "จุดสะอาดที่สุด" ประกอบ\n- จังหวัด MWQi ปานกลาง (พอใช้) → แนะนำได้แต่บอกผู้ใช้ว่าควรเลือกหาดที่สถานะดีกว่า\n- จังหวัด MWQi ต่ำ (เสื่อมโทรม) → บอกตรงๆ ว่ายังไม่เหมาะกับกิจกรรมที่ต้องสัมผัสน้ำ และแนะนำจังหวัดใกล้เคียงที่น้ำสะอาดกว่าแทน\n- ระบุค่า MWQi สั้นๆ ประกอบคำแนะนำ เช่น "กระบี่ MWQi ~82 (ระดับดี)" และแนะนำให้ดูค่าล่าสุดที่หน้าข้อมูลคุณภาพน้ำทะเลของเว็บ (/home)\n- หากผู้ใช้ถามจังหวัดที่ไม่มีในรายการ ให้บอกว่ายังไม่มีสถานีตรวจวัดในข้อมูลนี้ และเสนอจังหวัดใกล้เคียงจากรายการแทน\n\n== ข้อมูลความสะอาดน้ำทะเลรายจังหวัด (MWQi, ปีล่าสุดของแต่ละสถานี เรียงจากสะอาดที่สุด) ==\n{whale_tourism_data}'''
 
 # gemini-flash-latest = alias that always points to the current stable Flash model
 # (gemini-1.5-flash / gemini-2.0-flash were retired -> 404)
@@ -1390,13 +1510,14 @@ except Exception as _whale_import_err:
 
 def whale_ask_gemini(message):
     """Ask Gemini with the Nong Whale persona. Tries the SDK first, then REST API."""
+    system_prompt = build_whale_system_prompt()
     # 1) google-generativeai SDK
     if _whale_genai_ready:
         for model_name in WHALE_SDK_MODELS:
             try:
                 model = genai.GenerativeModel(
                     model_name,
-                    system_instruction=WHALE_SYSTEM_PROMPT,
+                    system_instruction=system_prompt,
                     safety_settings=WHALE_SAFETY_SETTINGS,
                 )
                 result = model.generate_content(message)
@@ -1421,7 +1542,7 @@ def whale_ask_gemini(message):
             # NOTE: no maxOutputTokens limit — newer Flash models spend tokens
             # on internal thinking first, a small cap leaves an empty answer.
             payload = {
-                "system_instruction": {"parts": [{"text": WHALE_SYSTEM_PROMPT}]},
+                "system_instruction": {"parts": [{"text": system_prompt}]},
                 "contents": [{"role": "user", "parts": [{"text": message}]}],
                 "safetySettings": WHALE_SAFETY_SETTINGS,
                 "generationConfig": {"temperature": 0.7},
