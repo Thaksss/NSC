@@ -1306,5 +1306,152 @@ def update_profile():
     finally:
         conn.close()
 
+# ==========================================
+# 🐋 NONG WHALE AI CHATBOT (BlueHeart Assistant)
+# ==========================================
+
+WHALE_OFFTOPIC_REPLY = "ขออภัยครับ น้องวาฬสามารถตอบได้เฉพาะเรื่องราวเกี่ยวกับทะเล ขยะทะเล ค่าดัชนีมลพิษในเว็บ BlueHeart และวิธีการทำความสะอาดชายหาดเท่านั้นครับ 🌊🐋"
+WHALE_ERROR_REPLY = "ขออภัยครับ ตอนนี้น้องวาฬมีปัญหาในการเชื่อมต่อ ลองใหม่อีกครั้งนะครับ 🐋"
+
+WHALE_SYSTEM_PROMPT = '''คุณคือ "น้องวาฬ" (Nong Whale) ผู้ช่วย AI ตัวปลาวาฬ และมาสคอตของเว็บไซต์ BlueHeart (blueheart.onrender.com)
+
+== บุคลิก ==
+- ปลาวาฬ AI ที่เป็นมิตร สุภาพ กระตือรือร้น ให้ความรู้ และเข้าใจง่าย
+- ใช้ภาษาง่าย เหมาะกับนักเรียนและบุคคลทั่วไป ไม่เป็นทางการจนเกินไป
+- ใช้ Emoji อย่างเหมาะสม เช่น 🐋 🌊 💙 ♻️ 🌱
+- ตอบกระชับ ไม่ยาวเกินความจำเป็น เว้นแต่ผู้ใช้ขอคำอธิบายละเอียด
+
+== ภาษา ==
+- ตอบเป็นภาษาไทยเสมอ แม้ผู้ใช้ถามเป็นภาษาอังกฤษหรือภาษาอื่น
+- ใช้คำศัพท์อังกฤษที่จำเป็นได้ เช่น Microplastics, Marine Debris, Water Quality Index โดยต้องอธิบายความหมายเป็นภาษาไทยด้วย
+
+== หัวข้อที่ตอบได้ (เฉพาะหัวข้อนี้เท่านั้น) ==
+1. การอธิบายค่าตัวชี้วัด ดัชนี และข้อมูลมลพิษทางน้ำ/ทะเลบนเว็บไซต์ BlueHeart
+2. วิธีการทำความสะอาดชายหาด
+3. เทคนิคและคำแนะนำการอนุรักษ์ทะเล
+4. คำแนะนำการอัปโหลดรูปภาพภารกิจทำความสะอาดชายหาดในเว็บ BlueHeart
+5. ระบบนิเวศทางทะเล
+6. สิ่งมีชีวิตในมหาสมุทร
+7. การอนุรักษ์มหาสมุทร
+8. ประเภทของขยะทะเล (Marine Debris)
+9. การย่อยสลายของพลาสติก
+10. ไมโครพลาสติก (Microplastics)
+11. ผลกระทบของขยะทะเลและพลาสติกต่อสิ่งแวดล้อม
+12. เรื่องอื่นที่เกี่ยวข้องโดยตรงกับทะเล มหาสมุทร ขยะทะเล มลพิษทางน้ำ และการอนุรักษ์สิ่งแวดล้อมทางทะเล
+
+== บทสนทนาเบื้องต้น ==
+ตอบการทักทายและคำถามสั้น ๆ ทั่วไปได้ เช่น สวัสดี สบายดีไหม ชื่ออะไร ทำอะไรได้บ้าง ขอบคุณ ลาก่อน
+โดยตอบสั้น ๆ เป็นมิตร และชวนผู้ใช้คุยเรื่องทะเลหรือฟีเจอร์ของ BlueHeart
+ห้ามขยายไปสนทนาเรื่องทั่วไปที่ไม่เกี่ยวกับ BlueHeart หรือทะเล
+
+== ข้อห้าม (เคร่งครัดมาก) ==
+หากคำถามอยู่นอกหัวข้อที่อนุญาตข้างต้น และไม่ใช่บทสนทนาเบื้องต้น ให้ตอบด้วยข้อความนี้เท่านั้น ห้ามเพิ่ม ห้ามแก้ไข ห้ามตอบสิ่งอื่น:
+"ขออภัยครับ น้องวาฬสามารถตอบได้เฉพาะเรื่องราวเกี่ยวกับทะเล ขยะทะเล ค่าดัชนีมลพิษในเว็บ BlueHeart และวิธีการทำความสะอาดชายหาดเท่านั้นครับ 🌊🐋"
+ตัวอย่างหัวข้อที่ต้องปฏิเสธ: การเขียนโปรแกรม/เขียนโค้ด การบ้านที่ไม่เกี่ยวกับทะเล ข่าวทั่วไป การเมือง เกม กีฬา การลงทุน คำถามส่วนตัวทั่วไป บันเทิง และเรื่องอื่น ๆ ที่ไม่เกี่ยวข้องกับขอบเขตของน้องวาฬ
+ห้ามให้คำแนะนำเรื่องนอกขอบเขต ห้ามเปลี่ยนหัวข้อไปตอบเรื่องอื่น
+
+== ข้อมูลเว็บไซต์ BlueHeart (ใช้ตอบคำถามเกี่ยวกับเว็บ) ==
+- BlueHeart ช่วยติดตามมลพิษทางทะเล: ผู้ใช้ "รายงานมลพิษ" (ถ่ายรูปจุดขยะ + AI นับจำนวนขยะในภาพ), "เคลียร์มลพิษ" (อัปโหลดรูปก่อน-หลังเก็บขยะเพื่อยืนยัน), "โหวตยืนยัน" รายงานของผู้ใช้อื่น, สะสมแต้มและแรงก์ (หยาดน้ำทะเล, คลื่นลูกใหม่, ผู้พิทักษ์ชายหาด, นักสู้แห่งท้องทะเล, เจ้าสมุทร) และทำภารกิจรายวัน
+- หน้าข้อมูลคุณภาพน้ำทะเลแสดงค่า: MWQi (Marine Water Quality Index = ดัชนีคุณภาพน้ำทะเล), DO (Dissolved Oxygen = ออกซิเจนละลายน้ำ, mg/L), TSS (Total Suspended Solids = ของแข็งแขวนลอย, mg/L), pH (ความเป็นกรด-เป็นด่างของน้ำ), Salinity (ความเค็มของน้ำทะเล, ppt)
+- ระดับคุณภาพน้ำทะเล (SOWAY Class): ดีมาก/ดี = น้ำสะอาดคุณภาพดี, พอใช้ = เริ่มมีมลพิษ, เสื่อมโทรม = มีมลพิษสูงต้องเร่งแก้ไข — บนแผนที่ใช้สี เขียว = ดี, เหลือง = พอใช้, แดง = เสื่อมโทรม'''
+
+WHALE_SDK_MODELS = ["gemini-1.5-flash", "gemini-2.0-flash"]
+WHALE_REST_MODELS = ["gemini-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash"]
+
+WHALE_SAFETY_SETTINGS = [
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"},
+]
+
+# Primary: Google Generative AI SDK (google-generativeai)
+# Fallback: Gemini REST API via requests (in case the SDK is unavailable)
+_whale_genai_ready = False
+try:
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", FutureWarning)  # SDK still works, just deprecated
+        import google.generativeai as genai
+    if GEMINI_API_KEY:
+        genai.configure(api_key=GEMINI_API_KEY)
+        _whale_genai_ready = True
+except Exception as _whale_import_err:
+    print(f"Nong Whale: SDK unavailable, will use REST API ({_whale_import_err})")
+
+def whale_ask_gemini(message):
+    """Ask Gemini with the Nong Whale persona. Tries the SDK first, then REST API."""
+    # 1) google-generativeai SDK
+    if _whale_genai_ready:
+        for model_name in WHALE_SDK_MODELS:
+            try:
+                model = genai.GenerativeModel(
+                    model_name,
+                    system_instruction=WHALE_SYSTEM_PROMPT,
+                    safety_settings=WHALE_SAFETY_SETTINGS,
+                )
+                result = model.generate_content(message)
+                text = ""
+                try:
+                    text = (result.text or "").strip()
+                except Exception:
+                    text = ""
+                if text:
+                    return text
+            except Exception as e:
+                print(f"Whale chat SDK error ({model_name}): {e}")
+
+    # 2) REST API fallback (same pattern as /api/detect-trash)
+    if not GEMINI_API_KEY:
+        return None
+    for model_name in WHALE_REST_MODELS:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
+            payload = {
+                "system_instruction": {"parts": [{"text": WHALE_SYSTEM_PROMPT}]},
+                "contents": [{"role": "user", "parts": [{"text": message}]}],
+                "safetySettings": WHALE_SAFETY_SETTINGS,
+                "generationConfig": {"temperature": 0.7, "maxOutputTokens": 800},
+            }
+            response = requests.post(url, json=payload, timeout=30)
+            if response.status_code == 200:
+                result_json = response.json()
+                candidates = result_json.get("candidates") or []
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    text = "".join(p.get("text", "") for p in parts).strip()
+                    if text:
+                        return text
+            elif response.status_code == 404:
+                continue  # model unavailable, try the next one
+            else:
+                print(f"Whale chat REST error ({model_name}): {response.status_code} {response.text[:200]}")
+        except requests.exceptions.Timeout:
+            print(f"Whale chat REST timeout ({model_name})")
+        except Exception as e:
+            print(f"Whale chat REST failed ({model_name}): {e}")
+    return None
+
+@app.route('/api/chat', methods=['POST'])
+def whale_chat():
+    try:
+        data = request.get_json(silent=True) or {}
+        message = (data.get('message') or '').strip()
+
+        if not message:
+            return jsonify({"reply": "พิมพ์คำถามเกี่ยวกับทะเลมาให้น้องวาฬหน่อยนะครับ 🐋🌊"}), 400
+
+        if len(message) > 1000:
+            message = message[:1000]
+
+        reply = whale_ask_gemini(message)
+        if not reply:
+            reply = WHALE_ERROR_REPLY
+        return jsonify({"reply": reply})
+
+    except Exception as e:
+        print(f"Whale chat route error: {e}")
+        return jsonify({"reply": WHALE_ERROR_REPLY}), 500
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)

@@ -1,0 +1,516 @@
+{# ════════════════════════════════════════════════════════════════
+     🐋 น้องวาฬ – Nong Whale AI Chatbot Widget (BlueHeart)
+     Include this just before </body> in every page template
+     with the Jinja include tag:  include "whale_chat.html"
+     ════════════════════════════════════════════════════════════════ #}
+<style>
+  /* ── Reset scope (CSS isolated to #whale-root) ───────────────── */
+  #whale-root *, #whale-root *::before, #whale-root *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Kanit', 'Sarabun', 'Prompt', sans-serif;
+  }
+
+  /* ── Summon button (shown after dismiss) ─────────────────────── */
+  #whale-summon-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 9000;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #e3f2fd 0%, #b9e0ff 100%);
+    color: #0d4fa3;
+    border: 1px solid rgba(11,123,203,0.25);
+    border-radius: 50px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(11,123,203,0.25);
+    transition: transform 0.2s, box-shadow 0.2s;
+    user-select: none;
+  }
+  #whale-summon-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(11,123,203,0.35);
+  }
+  #whale-summon-btn:active { transform: translateY(0); }
+
+  /* ── Draggable whale widget root ─────────────────────────────── */
+  #whale-root {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 9001;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 14px;
+  }
+
+  #whale-mascot {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6cc0f8 0%, #2b97e8 100%);
+    box-shadow: 0 6px 24px rgba(11,123,203,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;             /* let JS handle touch drag */
+    transition: transform 0.18s, box-shadow 0.18s;
+    animation: whale-float 3s ease-in-out infinite;
+  }
+  #whale-mascot:hover {
+    transform: scale(1.1);
+    box-shadow: 0 10px 32px rgba(11,123,203,0.45);
+  }
+  #whale-mascot:active { cursor: grabbing; }
+
+  @keyframes whale-float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+  }
+  #whale-mascot.dragging { animation: none !important; transform: none !important; }
+
+  /* ── Dismiss button on the mascot ────────────────────────────── */
+  #whale-dismiss {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: #fff;
+    border: 2px solid #fff;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: background 0.15s, transform 0.15s;
+    z-index: 2;
+    line-height: 1;
+  }
+  #whale-dismiss:hover { background: #dc2626; transform: scale(1.15); }
+
+  /* ── Chat panel (fixed; JS positions it next to the whale) ──── */
+  #whale-chat-panel {
+    position: fixed;
+    z-index: 9002;
+    width: min(340px, calc(100vw - 20px));
+    height: min(480px, calc(100vh - 120px));
+    background: linear-gradient(160deg, #fdfeff 0%, #e6f4ff 100%);
+    border: 1px solid rgba(11,123,203,0.18);
+    border-radius: 20px;
+    box-shadow: 0 24px 64px rgba(13,79,163,0.18), 0 0 0 1px rgba(11,123,203,0.10);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transform-origin: bottom right;  /* flipped by JS when opened below */
+  }
+  #whale-chat-panel.whale-open {
+    display: flex;
+    animation: whale-panel-in 0.25s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  }
+  @keyframes whale-panel-in {
+    from { opacity: 0; transform: scale(0.85) translateY(12px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  /* Header */
+  #whale-chat-header {
+    padding: 14px 16px;
+    background: linear-gradient(90deg, #e3f2fd 0%, #b9e0ff 100%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  #whale-chat-header .wh-avatar { font-size: 26px; line-height: 1; }
+  #whale-chat-header .wh-title  { flex: 1; min-width: 0; }
+  #whale-chat-header .wh-title h3 {
+    font-size: 15px; font-weight: 700; color: #0d4fa3; line-height: 1.2;
+  }
+  #whale-chat-header .wh-title span {
+    font-size: 11px; color: rgba(13,79,163,0.65);
+  }
+  #whale-close-chat {
+    background: rgba(11,123,203,0.14);
+    border: none; color: #0d4fa3; width: 28px; height: 28px; border-radius: 50%;
+    font-size: 14px; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  #whale-close-chat:hover { background: rgba(11,123,203,0.28); }
+
+  /* Messages */
+  #whale-messages {
+    flex: 1; overflow-y: auto; padding: 14px 12px;
+    display: flex; flex-direction: column; gap: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(11,123,203,0.4) transparent;
+    overscroll-behavior: contain;
+  }
+  #whale-messages::-webkit-scrollbar { width: 4px; }
+  #whale-messages::-webkit-scrollbar-thumb {
+    background: rgba(11,123,203,0.25); border-radius: 4px;
+  }
+  .wh-msg {
+    max-width: 85%; padding: 9px 13px; border-radius: 16px;
+    font-size: 13.5px; line-height: 1.55; white-space: pre-wrap;
+    word-break: break-word;
+    animation: wh-msg-in 0.2s ease;
+  }
+  @keyframes wh-msg-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .wh-msg.bot {
+    align-self: flex-start;
+    background: #e9f5ff; color: #17395f;
+    border-bottom-left-radius: 4px; border: 1px solid rgba(11,123,203,0.15);
+  }
+  .wh-msg.user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #4db1f5, #1583dd);
+    color: #fff; border-bottom-right-radius: 4px;
+  }
+  .wh-msg.thinking {
+    align-self: flex-start;
+    background: #f2f9ff; color: rgba(23,57,95,0.6);
+    font-style: italic; border: 1px dashed rgba(11,123,203,0.35);
+    border-bottom-left-radius: 4px;
+  }
+  .wh-dots span { display: inline-block; animation: wh-dot 1.2s infinite; }
+  .wh-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .wh-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes wh-dot {
+    0%,80%,100% { transform: translateY(0); }
+    40%         { transform: translateY(-5px); }
+  }
+
+  /* Input area */
+  #whale-input-area {
+    padding: 10px 12px; border-top: 1px solid rgba(11,123,203,0.15);
+    display: flex; gap: 8px; background: rgba(255,255,255,0.8); flex-shrink: 0;
+  }
+  #whale-input {
+    flex: 1; min-width: 0; background: #f6fbff;
+    border: 1px solid rgba(11,123,203,0.22); border-radius: 12px;
+    color: #17395f; padding: 9px 13px; font-size: 13px;
+    outline: none; transition: border-color 0.2s, background 0.2s;
+    resize: none; font-family: inherit; max-height: 100px; overflow-y: auto;
+  }
+  #whale-input::placeholder { color: rgba(23,57,95,0.4); }
+  #whale-input:focus { border-color: rgba(11,123,203,0.6); background: #ffffff; }
+  #whale-send-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #6cc0f8, #2b97e8);
+    border: none; color: #fff; font-size: 17px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 3px 12px rgba(11,123,203,0.3);
+  }
+  #whale-send-btn:hover { transform: scale(1.1); box-shadow: 0 5px 18px rgba(11,123,203,0.45); }
+  #whale-send-btn:active { transform: scale(0.95); }
+  #whale-send-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  /* ── Mobile ──────────────────────────────────────────────────── */
+  @media (max-width: 480px) {
+    #whale-mascot { width: 56px; height: 56px; font-size: 28px; }
+  }
+</style>
+
+<!-- ── Summon button ─────────────────────────────────────────── -->
+<button id="whale-summon-btn" aria-label="เรียกน้องวาฬ AI">🐋 เรียกวาฬ AI</button>
+
+<!-- ── Widget root ───────────────────────────────────────────── -->
+<div id="whale-root">
+
+  <!-- Chat panel (stacked above mascot) -->
+  <div id="whale-chat-panel" role="dialog" aria-label="น้องวาฬ AI Chat">
+    <div id="whale-chat-header">
+      <div class="wh-avatar">🐋</div>
+      <div class="wh-title">
+        <h3>🐋 น้องวาฬ</h3>
+        <span>BlueHeart AI Assistant</span>
+      </div>
+      <button id="whale-close-chat" aria-label="ปิดหน้าต่างแชท">✕</button>
+    </div>
+
+    <div id="whale-messages" aria-live="polite">
+      <div class="wh-msg bot">สวัสดีครับ! 🐋💙 น้องวาฬยินดีที่ได้เจอกันนะครับ วันนี้อยากคุยเรื่องทะเล ขยะทะเล หรือข้อมูลมลพิษในเว็บ BlueHeart แบบไหนดีครับ? 🌊</div>
+    </div>
+
+    <div id="whale-input-area">
+      <textarea id="whale-input" rows="1" placeholder="ถามน้องวาฬเกี่ยวกับทะเล..." aria-label="ข้อความ" maxlength="1000"></textarea>
+      <button id="whale-send-btn" aria-label="ส่งข้อความ">&#10148;</button>
+    </div>
+  </div>
+
+  <!-- Mascot -->
+  <div id="whale-mascot" role="button" tabindex="0" aria-label="เปิด/ปิดแชทน้องวาฬ AI">
+    🐋
+    <button id="whale-dismiss" aria-label="ซ่อนน้องวาฬ" title="ซ่อนน้องวาฬ">✕</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var root       = document.getElementById('whale-root');
+  var mascot     = document.getElementById('whale-mascot');
+  var dismissBtn = document.getElementById('whale-dismiss');
+  var summonBtn  = document.getElementById('whale-summon-btn');
+  var panel      = document.getElementById('whale-chat-panel');
+  var closeBtn   = document.getElementById('whale-close-chat');
+  var msgBox     = document.getElementById('whale-messages');
+  var inputEl    = document.getElementById('whale-input');
+  var sendBtn    = document.getElementById('whale-send-btn');
+
+  var chatOpen  = false;
+  var dragging  = false;
+  var dragMoved = false;   /* true if this press actually moved the whale */
+  var offX = 0, offY = 0;
+  var posRight = 28, posBottom = 28;
+  var DRAG_THRESHOLD = 5;  /* px before a press counts as a drag, not a click */
+
+  /* ── Position helpers ───────────────────────────────────────── */
+  function clampPos() {
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var rw = root.offsetWidth,  rh = root.offsetHeight;
+    var maxR = Math.max(0, vw - rw - 8);
+    var maxB = Math.max(0, vh - rh - 8);
+    posRight  = Math.max(8, Math.min(maxR, posRight));
+    posBottom = Math.max(8, Math.min(maxB, posBottom));
+  }
+  function setPos() {
+    clampPos();
+    root.style.right  = posRight  + 'px';
+    root.style.bottom = posBottom + 'px';
+    root.style.left   = 'auto';
+    root.style.top    = 'auto';
+  }
+  setPos();
+
+  /* ── Panel positioning: keep the chat window next to the whale,
+        never overflowing the viewport ───────────────────────────── */
+  function positionPanel() {
+    if (!chatOpen) return;
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var r = mascot.getBoundingClientRect();
+    var pw = panel.offsetWidth, ph = panel.offsetHeight;
+    var left = r.right - pw;                    /* align right edges */
+    if (left < 8) left = 8;
+    if (left + pw > vw - 8) left = vw - pw - 8;
+    var top = r.top - 14 - ph;                  /* prefer above the whale */
+    var below = false;
+    if (top < 8) { top = r.bottom + 14; below = true; }
+    if (top + ph > vh - 8) top = Math.max(8, vh - ph - 8);
+    panel.style.left = Math.round(left) + 'px';
+    panel.style.top = Math.round(top) + 'px';
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+    panel.style.transformOrigin = below ? 'top right' : 'bottom right';
+  }
+
+  /* Re-clamp when the viewport resizes / rotates (mobile friendly) */
+  window.addEventListener('resize', function () {
+    setPos();
+    positionPanel();
+  });
+
+  /* ── Drag start (mouse + touch share this) ──────────────────── */
+  function dragStart(clientX, clientY) {
+    dragging = true;
+    dragMoved = false;
+    mascot.classList.add('dragging');
+    var r = root.getBoundingClientRect();
+    offX = clientX - r.left;
+    offY = clientY - r.top;
+  }
+
+  function dragMove(clientX, clientY) {
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var rw = root.offsetWidth,  rh = root.offsetHeight;
+    var nl = Math.max(8, Math.min(vw - rw - 8, clientX - offX));
+    var nt = Math.max(8, Math.min(vh - rh - 8, clientY - offY));
+    posRight  = vw - nl - rw;
+    posBottom = vh - nt - rh;
+    if (Math.abs(posRight - lastR) > DRAG_THRESHOLD || Math.abs(posBottom - lastB) > DRAG_THRESHOLD) {
+      dragMoved = true;
+    }
+    lastR = posRight; lastB = posBottom;
+    setPos();
+    positionPanel();      /* chat follows the whale while dragging */
+  }
+
+  function dragEnd() {
+    if (!dragging) return;
+    dragging = false;
+    mascot.classList.remove('dragging');
+    /* If the browser suppresses the click after a drag (touch), a stale
+       dragMoved must not swallow the next legitimate tap. */
+    setTimeout(function () { dragMoved = false; }, 80);
+  }
+
+  var lastR = posRight, lastB = posBottom;
+
+  /* ── Mouse events ───────────────────────────────────────────── */
+  mascot.addEventListener('mousedown', function (e) {
+    if (e.target === dismissBtn || e.button !== 0) return;
+    lastR = posRight; lastB = posBottom;
+    dragStart(e.clientX, e.clientY);
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function (e) {
+    if (!dragging) return;
+    dragMove(e.clientX, e.clientY);
+  });
+  document.addEventListener('mouseup', dragEnd);
+
+  /* ── Touch events (drag on mobile) ──────────────────────────── */
+  mascot.addEventListener('touchstart', function (e) {
+    if (e.target === dismissBtn) return;
+    lastR = posRight; lastB = posBottom;
+    var t = e.touches[0];
+    dragStart(t.clientX, t.clientY);
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function (e) {
+    if (!dragging) return;
+    var t = e.touches[0];
+    dragMove(t.clientX, t.clientY);
+    e.preventDefault();       /* stop the page from scrolling while dragging */
+  }, { passive: false });
+
+  document.addEventListener('touchend', dragEnd);
+
+  /* ── Click = toggle chat (drag never toggles) ───────────────── */
+  mascot.addEventListener('click', function (e) {
+    if (e.target === dismissBtn) return;
+    if (dragMoved) { dragMoved = false; return; }   /* ignore after a drag */
+    toggleChat();
+  });
+  mascot.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleChat(); }
+  });
+
+  function toggleChat() {
+    chatOpen = !chatOpen;
+    if (chatOpen) {
+      panel.classList.add('whale-open');
+      positionPanel();
+      setTimeout(function () { inputEl.focus(); }, 80);
+    } else {
+      panel.classList.remove('whale-open');
+    }
+  }
+
+  closeBtn.addEventListener('click', function () {
+    chatOpen = false;
+    panel.classList.remove('whale-open');
+  });
+
+  /* ── Dismiss / Summon ───────────────────────────────────────── */
+  dismissBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    root.style.display = 'none';
+    summonBtn.style.display = 'flex';
+    chatOpen = false;
+    panel.classList.remove('whale-open');
+  });
+  summonBtn.addEventListener('click', function () {
+    summonBtn.style.display = 'none';
+    root.style.display = 'flex';
+    setPos();                       /* re-clamp in case window shrank */
+  });
+
+  /* ── Messages ───────────────────────────────────────────────── */
+  function addMsg(text, role) {
+    var d = document.createElement('div');
+    d.className = 'wh-msg ' + role;
+    d.textContent = text;           /* textContent = XSS-safe, no HTML injection */
+    msgBox.appendChild(d);
+    msgBox.scrollTop = msgBox.scrollHeight;
+    return d;
+  }
+
+  function showThinking() {
+    var d = document.createElement('div');
+    d.className = 'wh-msg thinking';
+    d.id = 'wh-thinking';
+    d.innerHTML = 'กำลังคิด<span class="wh-dots"><span>.</span><span>.</span><span>.</span></span> 🐋';
+    msgBox.appendChild(d);
+    msgBox.scrollTop = msgBox.scrollHeight;
+  }
+
+  function removeThinking() {
+    var el = document.getElementById('wh-thinking');
+    if (el) el.remove();
+  }
+
+  /* ── Send to /api/chat ──────────────────────────────────────── */
+  function sendMessage() {
+    var txt = inputEl.value.trim();
+    if (!txt || sendBtn.disabled) return;   /* block empty messages */
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    addMsg(txt, 'user');
+    showThinking();
+    sendBtn.disabled = true;
+    inputEl.disabled = true;
+
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: txt })
+    })
+    .then(function (r) {
+      if (!r.ok && r.status !== 400) {
+        throw new Error('HTTP ' + r.status);
+      }
+      return r.json();
+    })
+    .then(function (data) {
+      removeThinking();
+      addMsg((data && data.reply) || 'ขออภัยครับ ตอนนี้น้องวาฬมีปัญหาในการเชื่อมต่อ ลองใหม่อีกครั้งนะครับ 🐋', 'bot');
+    })
+    .catch(function () {
+      removeThinking();
+      addMsg('ขออภัยครับ ตอนนี้น้องวาฬมีปัญหาในการเชื่อมต่อ ลองใหม่อีกครั้งนะครับ 🐋', 'bot');
+    })
+    .finally(function () {
+      sendBtn.disabled = false;
+      inputEl.disabled = false;
+      inputEl.focus();
+    });
+  }
+
+  /* ── Auto-grow textarea ─────────────────────────────────────── */
+  inputEl.addEventListener('input', function () {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+  });
+
+  /* ── Enter to send (Shift+Enter = new line) ─────────────────── */
+  inputEl.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+  sendBtn.addEventListener('click', sendMessage);
+})();
+</script>
