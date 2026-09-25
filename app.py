@@ -22,6 +22,13 @@ import io
 import json
 import base64
 
+# Load .env file (local development; on Render use the Environment settings instead)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 WASTE_CLASSES = list(range(12))
@@ -1355,8 +1362,10 @@ WHALE_SYSTEM_PROMPT = '''คุณคือ "น้องวาฬ" (Nong Whale)
 - หน้าข้อมูลคุณภาพน้ำทะเลแสดงค่า: MWQi (Marine Water Quality Index = ดัชนีคุณภาพน้ำทะเล), DO (Dissolved Oxygen = ออกซิเจนละลายน้ำ, mg/L), TSS (Total Suspended Solids = ของแข็งแขวนลอย, mg/L), pH (ความเป็นกรด-เป็นด่างของน้ำ), Salinity (ความเค็มของน้ำทะเล, ppt)
 - ระดับคุณภาพน้ำทะเล (SOWAY Class): ดีมาก/ดี = น้ำสะอาดคุณภาพดี, พอใช้ = เริ่มมีมลพิษ, เสื่อมโทรม = มีมลพิษสูงต้องเร่งแก้ไข — บนแผนที่ใช้สี เขียว = ดี, เหลือง = พอใช้, แดง = เสื่อมโทรม'''
 
-WHALE_SDK_MODELS = ["gemini-1.5-flash", "gemini-2.0-flash"]
-WHALE_REST_MODELS = ["gemini-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash"]
+# gemini-flash-latest = alias that always points to the current stable Flash model
+# (gemini-1.5-flash / gemini-2.0-flash were retired -> 404)
+WHALE_SDK_MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest"]
+WHALE_REST_MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest"]
 
 WHALE_SAFETY_SETTINGS = [
     {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
@@ -1398,6 +1407,8 @@ def whale_ask_gemini(message):
                     text = ""
                 if text:
                     return text
+                finish = getattr(getattr(result, "candidates", [{}])[0] if getattr(result, "candidates", None) else {}, "finish_reason", None)
+                print(f"Whale chat SDK empty response ({model_name}), finish_reason={finish}")
             except Exception as e:
                 print(f"Whale chat SDK error ({model_name}): {e}")
 
@@ -1407,11 +1418,13 @@ def whale_ask_gemini(message):
     for model_name in WHALE_REST_MODELS:
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
+            # NOTE: no maxOutputTokens limit — newer Flash models spend tokens
+            # on internal thinking first, a small cap leaves an empty answer.
             payload = {
                 "system_instruction": {"parts": [{"text": WHALE_SYSTEM_PROMPT}]},
                 "contents": [{"role": "user", "parts": [{"text": message}]}],
                 "safetySettings": WHALE_SAFETY_SETTINGS,
-                "generationConfig": {"temperature": 0.7, "maxOutputTokens": 800},
+                "generationConfig": {"temperature": 0.7},
             }
             response = requests.post(url, json=payload, timeout=30)
             if response.status_code == 200:
@@ -1422,6 +1435,7 @@ def whale_ask_gemini(message):
                     text = "".join(p.get("text", "") for p in parts).strip()
                     if text:
                         return text
+                    print(f"Whale chat REST empty response ({model_name}), finish_reason={candidates[0].get('finishReason')}, promptFeedback={result_json.get('promptFeedback')}")
             elif response.status_code == 404:
                 continue  # model unavailable, try the next one
             else:
