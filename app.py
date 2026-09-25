@@ -1353,7 +1353,9 @@ WHALE_TOURISM_SUMMARY_CACHE = None
 
 def build_whale_tourism_summary():
     """สรุปค่า MWQi (soway_score) ต่อจังหวัดจาก cached_water_data.json
-    ใช้เฉพาะข้อมูลปีล่าสุดของแต่ละสถานีตรวจวัด เพื่อให้ค่าเป็นปัจจุบันที่สุด"""
+    - เก็บเฉพาะเรคคอร์ดล่าสุดของแต่ละสถานีตรวจวัด (จังหวัด + ชื่อพื้นที่)
+    - สถิติระดับจังหวัด (เฉลี่ย/จุดสะอาดสุด) คำนวณจากเฉพาะสถานีที่ข้อมูลเป็น "ปีล่าสุดของจังหวัด"
+      เพื่อให้ตัวเลขเป็นปีเดียวกัน ไม่ปนค่าเก่าของสถานีที่หยุดเก็บข้อมูลก่อนหน้า"""
     global WHALE_TOURISM_SUMMARY_CACHE
     if WHALE_TOURISM_SUMMARY_CACHE is not None:
         return WHALE_TOURISM_SUMMARY_CACHE
@@ -1380,7 +1382,7 @@ def build_whale_tourism_summary():
         if prev is None or date_str > prev.get('date', ''):
             latest_per_station[key] = row
 
-    # รวมเป็นรายจังหวัด
+    # รวมเป็นรายจังหวัด + หา "ปีล่าสุดของจังหวัด"
     stats = {}
     for (province, area), row in latest_per_station.items():
         try:
@@ -1388,21 +1390,43 @@ def build_whale_tourism_summary():
         except (TypeError, ValueError):
             score = None
         cls = (row.get('soway_class') or '').strip()
-        item = stats.setdefault(province, {'count': 0, 'sum': 0.0, 'best_score': None, 'best_area': area, 'best_cls': cls})
-        item['count'] += 1
-        if score is not None:
-            item['sum'] += score
-            if item['best_score'] is None or score > item['best_score']:
-                item['best_score'] = score
-                item['best_area'] = area
-                item['best_cls'] = cls
+        year = (row.get('date') or '')[:4]
+        item = stats.setdefault(province, {
+            'stations': [],           # สถานีทุกสถานี (ล่าสุดของแต่ละสถานี)
+            'cur_count': 0, 'cur_sum': 0.0,
+            'best_score': None, 'best_area': area, 'best_cls': cls, 'best_year': year,
+        })
+        item['stations'].append({
+            'area': area, 'score': score, 'class': cls, 'year': year,
+        })
+        if year and year > (item.get('latest_year') or ''):
+            item['latest_year'] = year
 
     provinces = []
     for province, s in stats.items():
+        latest_year = s.get('latest_year') or ''
+        # สถิติจังหวัดคิดจากเฉพาะสถานีที่ข้อมูลเป็นปีล่าสุดของจังหวัด
+        for st in s['stations']:
+            if st['year'] == latest_year and st['score'] is not None:
+                s['cur_count'] += 1
+                s['cur_sum'] += st['score']
+                if s['best_score'] is None or st['score'] > s['best_score']:
+                    s['best_score'] = st['score']
+                    s['best_area'] = st['area']
+                    s['best_cls'] = st['class']
+
+        # เรียงสถานี สะอาดสุด -> มลพิษสุด (สถานีที่ไม่มีค่าไปท้าย)
+        stations_sorted = sorted(
+            s['stations'],
+            key=lambda st: (st['score'] is None, -(st['score'] if st['score'] is not None else 0)),
+        )
         provinces.append({
             'province': province,
-            'stations': s['count'],
-            'avg_mwqi': round(s['sum'] / s['count'], 1) if s['count'] else None,
+            'latest_year': latest_year,
+            'stations': stations_sorted,
+            'stations_count': len(stations_sorted),
+            'cur_stations_count': s['cur_count'],
+            'avg_mwqi': round(s['cur_sum'] / s['cur_count'], 1) if s['cur_count'] else None,
             'best_station': s['best_area'],
             'best_mwqi': s['best_score'],
             'best_class': s['best_cls'],
@@ -1414,22 +1438,28 @@ def build_whale_tourism_summary():
     return provinces
 
 def whale_tourism_context():
-    """สร้างข้อความสรุปข้อมูล MWQi รายจังหวัด สำหรับแทรกใน system prompt ของน้องวาฬ"""
+    """สร้างข้อความสรุปข้อมูล MWQi รายจังหวัด (ระบุสถานีตรวจวัดทุกสถานี + ปีของข้อมูล)
+    สำหรับแทรกใน system prompt ของน้องวาฬ"""
     rows = build_whale_tourism_summary()
     if not rows:
         return "(ขณะนี้ไม่มีข้อมูล MWQi ให้ใช้ หากผู้ใช้ถามเรื่องความสะอาดของจังหวัด ให้บอกว่าขออภัยและแนะนำให้ดูหน้าข้อมูลคุณภาพน้ำทะเลของเว็บแทน)"
     lines = []
     for p in rows:
-        parts = [f"- {p['province']}:"]
+        parts = [f"- {p['province']} (ข้อมูลปีล่าสุด {p['latest_year'] or 'ไม่ระบุ'}, {p['stations_count']} สถานีตรวจวัด)"]
         if p['avg_mwqi'] is not None:
-            parts.append(f"MWQi เฉลี่ย {p['avg_mwqi']}")
+            parts.append(f"MWQi เฉลี่ย (เฉพาะสถานีปีล่าสุด) {p['avg_mwqi']}")
         if p['best_mwqi'] is not None:
             parts.append(f"| จุดสะอาดที่สุด \"{p['best_station']}\" (MWQi {p['best_mwqi']:g}, ระดับ {p['best_class'] or 'ไม่ระบุ'})")
-        parts.append(f"| ({p['stations']} สถานีตรวจวัด)")
+        lines.append(" ".join(parts))
+        # รายชื่อสถานีทุกสถานีของจังหวัด เรียงจากสะอาดสุด พร้อมค่า MWQi/ระดับ/ปีข้อมูล
+        for st in p['stations']:
+            if st['score'] is None:
+                lines.append(f"    • {st['area']} (ไม่มีค่า MWQi, ข้อมูลปี {st['year'] or 'ไม่ระบุ'})")
+            else:
+                lines.append(f"    • {st['area']} (MWQi {st['score']:g}, ระดับ {st['class'] or 'ไม่ระบุ'}, ข้อมูลปี {st['year'] or 'ไม่ระบุ'})")
         tag = WHALE_PROVINCE_TAGS.get(p['province'])
         if tag:
-            parts.append(f"| ที่เที่ยวยอดนิยม: {tag}")
-        lines.append(" ".join(parts))
+            lines.append(f"    ที่เที่ยวยอดนิยม: {tag}")
     return "\n".join(lines)
 
 def build_whale_system_prompt():
@@ -1480,7 +1510,7 @@ WHALE_SYSTEM_PROMPT_TEMPLATE = '''คุณคือ "น้องวาฬ" (No
 == ข้อมูลเว็บไซต์ BlueHeart (ใช้ตอบคำถามเกี่ยวกับเว็บ) ==
 - BlueHeart ช่วยติดตามมลพิษทางทะเล: ผู้ใช้ "รายงานมลพิษ" (ถ่ายรูปจุดขยะ + AI นับจำนวนขยะในภาพ), "เคลียร์มลพิษ" (อัปโหลดรูปก่อน-หลังเก็บขยะเพื่อยืนยัน), "โหวตยืนยัน" รายงานของผู้ใช้อื่น, สะสมแต้มและแรงก์ (หยาดน้ำทะเล, คลื่นลูกใหม่, ผู้พิทักษ์ชายหาด, นักสู้แห่งท้องทะเล, เจ้าสมุทร) และทำภารกิจรายวัน
 - หน้าข้อมูลคุณภาพน้ำทะเลแสดงค่า: MWQi (Marine Water Quality Index = ดัชนีคุณภาพน้ำทะเล), DO (Dissolved Oxygen = ออกซิเจนละลายน้ำ, mg/L), TSS (Total Suspended Solids = ของแข็งแขวนลอย, mg/L), pH (ความเป็นกรด-เป็นด่างของน้ำ), Salinity (ความเค็มของน้ำทะเล, ppt)
-- ระดับคุณภาพน้ำทะเล (SOWAY Class): ดีมาก/ดี = น้ำสะอาดคุณภาพดี, พอใช้ = เริ่มมีมลพิษ, เสื่อมโทรม = มีมลพิษสูงต้องเร่งแก้ไข — บนแผนที่ใช้สี เขียว = ดี, เหลือง = พอใช้, แดง = เสื่อมโทรม\n\n== การแนะนำสถานที่ท่องเที่ยวจากค่าความสะอาดน้ำทะเล (MWQi) ==\nเมื่อผู้ใช้ถามว่าควรไปเที่ยวทะเลจังหวัดไหน หรือจังหวัดไหนน้ำสะอาด ให้ใช้ข้อมูลด้านล่างนี้เป็นหลักเสมอ:\n- จัดอันดับ/แนะนำจากค่า MWQi จริง (0-100, ยิ่งสูงยิ่งสะอาด) ของแต่ละจังหวัด ห้ามเดาค่าเอง ห้ามแต่งข้อมูลจังหวัดที่ไม่มีในรายการ\n- จังหวัด MWQi สูง (ดีมาก/ดี) → แนะนำกิจกรรมน้ำใสได้เต็มที่ เช่น ว่ายน้ำ ดำน้ำ ดูปะการัง พร้อมยก "จุดสะอาดที่สุด" ประกอบ\n- จังหวัด MWQi ปานกลาง (พอใช้) → แนะนำได้แต่บอกผู้ใช้ว่าควรเลือกหาดที่สถานะดีกว่า\n- จังหวัด MWQi ต่ำ (เสื่อมโทรม) → บอกตรงๆ ว่ายังไม่เหมาะกับกิจกรรมที่ต้องสัมผัสน้ำ และแนะนำจังหวัดใกล้เคียงที่น้ำสะอาดกว่าแทน\n- ระบุค่า MWQi สั้นๆ ประกอบคำแนะนำ เช่น "กระบี่ MWQi ~82 (ระดับดี)" และแนะนำให้ดูค่าล่าสุดที่หน้าข้อมูลคุณภาพน้ำทะเลของเว็บ (/home)\n- หากผู้ใช้ถามจังหวัดที่ไม่มีในรายการ ให้บอกว่ายังไม่มีสถานีตรวจวัดในข้อมูลนี้ และเสนอจังหวัดใกล้เคียงจากรายการแทน\n\n== ข้อมูลความสะอาดน้ำทะเลรายจังหวัด (MWQi, ปีล่าสุดของแต่ละสถานี เรียงจากสะอาดที่สุด) ==\n{whale_tourism_data}'''
+- ระดับคุณภาพน้ำทะเล (SOWAY Class): ดีมาก/ดี = น้ำสะอาดคุณภาพดี, พอใช้ = เริ่มมีมลพิษ, เสื่อมโทรม = มีมลพิษสูงต้องเร่งแก้ไข — บนแผนที่ใช้สี เขียว = ดี, เหลือง = พอใช้, แดง = เสื่อมโทรม\n\n== การแนะนำสถานที่ท่องเที่ยวจากค่าความสะอาดน้ำทะเล (MWQi) ==\nเมื่อผู้ใช้ถามว่าควรไปเที่ยวทะเลจังหวัดไหน หรือจังหวัดไหนน้ำสะอาด ให้ใช้ข้อมูลด้านล่างนี้เป็นหลักเสมอ:\n- ยึดข้อมูล "ปีล่าสุด" เป็นหลักเสมอ: สถิติระดับจังหวัด (MWQi เฉลี่ย, จุดสะอาดที่สุด) คิดจากเฉพาะสถานีที่ข้อมูลเป็นปีล่าสุดของจังหวัดนั้น ส่วนสถานีที่ข้อมูลเก่ากว่าปีล่าสุดของจังหวัด ให้ใช้อธิบายเฉพาะจุดได้ แต่ต้องระบุปีข้อมูลกำกับเสมอ เช่น \"ข้อมูลปี 2023\" และห้ามนำมาเฉลี่ยรวมกับปีล่าสุด\n- ระบุปีข้อมูลกำกับเมื่อตอบเกี่ยวกับค่า MWQi ของจุดใดจุดหนึ่ง เช่น \"หาดพลา MWQi ~84.6 (ระดับดี, ข้อมูลปี 2025)\"\n- จัดอันดับ/แนะนำจากค่า MWQi จริง (0-100, ยิ่งสูงยิ่งสะอาด) ของแต่ละจังหวัด ห้ามเดาค่าเอง ห้ามแต่งตัวเลข MWQi เอง\n- สถานที่ที่ผู้ใช้ถาม "มีอยู่จริงในรายการข้อมูลด้านล่าง" (เช็คจากชื่อสถานี/ชื่อพื้นที่ทั้งหมดทุกจังหวัด ไม่ใช่แค่จุดสะอาดที่สุดของจังหวัด) ต้องตอบจากค่าจริงในรายการเท่านั้น ห้ามตอบว่าไม่มีข้อมูลเด็ดขาด เพราะถ้าชื่อปรากฏในรายการแปลว่ามีข้อมูลจริง\n- หากผู้ใช้ถามถึงสถานที่/หาด/เกาะที่ "ไม่มีชื่ออยู่ในรายการข้อมูลด้านล่าง" ให้บอกผู้ใช้ตรงๆ ว่า \"สถานที่นี้ยังไม่มีข้อมูลในฐานข้อมูลของเว็บ\" จากนั้นช่วยแนะนำได้โดยสรุปองค์ประกอบโดยรวมของพื้นที่โดยรอบ/จังหวัดนั้นจากค่าจริงของสถานีใกล้เคียงในรายการ เช่น สภาพน้ำโดยรวมของจังหวัด น้ำสะอาดหรือไม่ แต่ต้องระบุให้ชัดว่าค่าเหล่านี้เป็นของสถานีใกล้เคียง ไม่ใช่ตัวสถานที่นั้นโดยตรง และแนะนำให้ดูค่าล่าสุดที่หน้าข้อมูลคุณภาพน้ำทะเลของเว็บ (/home)\n- จังหวัด MWQi สูง (ดีมาก/ดี) → แนะนำกิจกรรมน้ำใสได้เต็มที่ เช่น ว่ายน้ำ ดำน้ำ ดูปะการัง พร้อมยก "จุดสะอาดที่สุด" ประกอบ\n- จังหวัด MWQi ปานกลาง (พอใช้) → แนะนำได้แต่บอกผู้ใช้ว่าควรเลือกหาดที่สถานะดีกว่า\n- จังหวัด MWQi ต่ำ (เสื่อมโทรม) → บอกตรงๆ ว่ายังไม่เหมาะกับกิจกรรมที่ต้องสัมผัสน้ำ และแนะนำจังหวัดใกล้เคียงที่น้ำสะอาดกว่าแทน\n- ระบุค่า MWQi สั้นๆ ประกอบคำแนะนำ เช่น \"กระบี่ MWQi ~93 (ระดับดีมาก, ข้อมูลปี 2025)\" และแนะนำให้ดูค่าล่าสุดที่หน้าข้อมูลคุณภาพน้ำทะเลของเว็บ (/home)\n- หากผู้ใช้ถามจังหวัดที่ไม่มีอยู่ในรายการเลย ให้บอกว่ายังไม่มีสถานีตรวจวัดในข้อมูลนี้ และเสนอจังหวัดใกล้เคียงจากรายการแทน\n\n== ข้อมูลความสะอาดน้ำทะเลรายจังหวัด (MWQi, สถานีทุกสถานีพร้อมปีข้อมูล เรียงจังหวัดจากจุดสะอาดที่สุด) ==\n{whale_tourism_data}'''
 
 # gemini-flash-latest = alias that always points to the current stable Flash model
 # (gemini-1.5-flash / gemini-2.0-flash were retired -> 404)
